@@ -17,6 +17,10 @@ Use it to strip distractions from a page, make a site easier on the eyes, or try
 
 - Hide anything. Click an element and press Delete, or switch to the Zap tool and click things away one by one.
 - Edit text in place. Double-click any text, type, and press Enter.
+- Resize, pad and round elements by dragging handles on the page: the edges and corner resize, the green and orange handles change padding and margin, and the dot near the corner sets the radius. Shift snaps to 8px.
+- Move the selection with the arrow keys, or drag it past its siblings to reorder it.
+- Hold Alt and point at another element to see the distance between them. A selected flex or grid container shows its children, gaps and tracks.
+- Right-click any element and choose Stylus, then Hide this element, Edit this text, or Style this element, without opening edit mode first.
 - Restyle elements in the Design panel. It covers layout and flexbox alignment, size, margin and padding, typography, background, border, shadow, blur, and opacity. Drag a field's label to change its value.
 - Write CSS directly, either for the selected element or for the whole site.
 - Style hover and focus states, or limit an edit to one screen size (mobile, tablet, desktop).
@@ -51,6 +55,9 @@ Press Alt+Shift+S, or click the Stylus icon in the toolbar, to turn edit mode on
 | Esc, Enter, Tab | Select the parent, first child, next sibling |
 | S | Select all elements similar to the current one |
 | Delete | Hide the selection |
+| Arrow keys, Shift+arrows | Move the selection by 1px, by 10px |
+| Drag the selection | Reorder it among its siblings |
+| Hold Alt and point | Measure the distance to another element |
 | Cmd+Z, Cmd+Shift+Z | Undo, redo |
 | L, D | Show or hide the Layers and Design panels |
 
@@ -70,7 +77,7 @@ pnpm e2e        # builds the extension, then runs the Playwright suite against i
 
 The suite in `packages/extension/e2e` loads the built extension into Chromium with a fresh profile for each test and drives it with the mouse and keyboard. It uses three fixture pages: an ordinary page, a single-page app that re-renders its content, and a hostile page with a full-screen overlay at the maximum z-index and `!important` style resets.
 
-The 66 tests check edit mode, selection and keyboard navigation, every tool, the Layers search, each Design control, hover and breakpoint edits, all theme presets, Focus mode, the Changes panel, undo and redo, persistence across reloads, loading without a flash of the original page, per-site isolation, sync between tabs, and edits surviving re-renders.
+The 91 tests check edit mode, the right-click menu, the on-canvas handles, nudging and reordering, measuring, selection and keyboard navigation, every tool, the Layers search, each Design control, hover and breakpoint edits, all theme presets, Focus mode, the Changes panel, undo and redo, persistence across reloads, loading without a flash of the original page, per-site isolation, sync between tabs, and edits surviving re-renders. One test is a full session driven only by mouse moves, clicks, drags, held keys and typing.
 
 ```sh
 npx playwright install chromium            # once, or set CHROME=/path/to/chrome
@@ -80,9 +87,9 @@ pnpm --filter @stylus/extension e2e:ui     # Playwright UI mode for debugging
 
 ## How it works
 
-Stylus stores every change as a small JSON record called an `EditOp`. There are five kinds: `style`, `hide`, `text`, `rawCss`, and `preset`. A site's ops live in `chrome.storage.local` under its origin.
+Stylus stores every change as a small JSON record called an `EditOp`. There are six kinds: `style`, `hide`, `text`, `move`, `rawCss`, and `preset`. A site's ops live in `chrome.storage.local` under its origin.
 
-On page load, the content script reads the site's ops and compiles the style, hide, and preset ops into one `<style>` element. It holds the first paint until that finishes, so hidden elements never flash. A `MutationObserver` applies text ops again whenever the page re-renders them.
+On page load, the content script reads the site's ops and compiles the style, hide, and preset ops into one `<style>` element. It holds the first paint until that finishes, so hidden elements never flash. A `MutationObserver` applies text and move ops again whenever the page re-renders them.
 
 ```
 packages/shared      EditOp schema (zod), op-to-CSS compiler, edit helpers, undo history
@@ -96,8 +103,7 @@ packages/extension   the WXT extension
 
 ## Roadmap
 
-- Resize, nudge, and reorder elements by dragging handles on the page, and measure distances between elements.
-- A Cmd+K prompt that asks an AI model for style changes and shows them as a preview you accept or reject.
-- An MCP server so coding agents can read your edits, apply styles to the open tab, and port the changes into a codebase.
+- Recording a selected area of the page as a video, with a visible cursor and click effects.
+- Right-click an element, describe the problem, and hand it to your coding agent to fix in your codebase.
 - Design token extraction, and copying a selection as CSS or Tailwind classes.
 - Named versions per site with a before and after comparison.

@@ -68,7 +68,10 @@ export function reorderUp() {
   drag = null;
   dropLine.value = null;
   if (!d?.started) return false;
+  // Chrome only fires a click after this pointerup when the pressed element didn't move in the DOM.
+  // Swallow that click if it comes, but never a later, real one.
   swallowClick = true;
+  setTimeout(() => (swallowClick = false), 0);
   const parent = d.el.parentElement;
   if (!parent || d.anchor === d.el.nextElementSibling) return true;
   const others = Array.from(parent.children).filter((c) => c !== d.el);

@@ -7,6 +7,8 @@ export default defineConfig({
     name: 'Stylus — live page canvas',
     description: 'Turn any webpage into a design canvas: hide, edit, restyle and theme pages live.',
     permissions: ['storage', 'tabs', 'contextMenus', 'tabCapture', 'offscreen', 'unlimitedStorage'],
+    // Same reach as the content script (which already runs on every site); needed for tabs.captureVisibleTab.
+    host_permissions: ['<all_urls>'],
     action: { default_title: 'Toggle Stylus edit mode (Alt+Shift+S)' },
     commands: {
       'toggle-edit': {

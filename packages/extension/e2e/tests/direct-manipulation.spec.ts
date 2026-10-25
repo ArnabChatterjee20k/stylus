@@ -157,6 +157,21 @@ test.describe('reorder', () => {
     expect(await order(page)).toEqual(['first', 'second', 'third', 'aside']);
   });
 
+  test('the first click after a drop still works', async ({ stylus, page }) => {
+    await stylus.open();
+    await stylus.edit();
+    await stylus.pick('#first');
+    const from = await center(page, '#first');
+    const to = await center(page, '#second');
+    await page.mouse.move(from.x, from.y);
+    await page.mouse.down();
+    await page.mouse.move(to.b.x + to.b.width - 5, from.y, { steps: 10 });
+    await page.mouse.up();
+    const third = (await page.locator('#third').boundingBox())!;
+    await page.mouse.click(third.x + 6, third.y + 6);
+    await expect(stylus.crumb()).toHaveText('article#third');
+  });
+
   test('a small wobble while clicking does not move anything', async ({ stylus, page }) => {
     await stylus.open();
     await stylus.edit();

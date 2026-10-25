@@ -1,5 +1,5 @@
 import { browser } from 'wxt/browser';
-import { saveRecording } from '../../lib/recordings-db';
+import { appendChunk, beginSession, discardSession, finalizeSession } from '../../lib/recordings-db';
 import type { Crop, OffscreenControl, OffscreenStart, RecCropUpdate, RecResult } from '../../lib/recorder-protocol';
 
 // Insertable streams are Chrome-only and not in TypeScript's DOM lib.
@@ -17,9 +17,12 @@ const MIME_TYPES = ['video/mp4;codecs=avc1,opus', 'video/mp4;codecs=avc1', 'vide
 const even = (n: number) => Math.max(2, Math.round(n / 2) * 2);
 
 type Session = {
+  id: string;
   media: MediaStream;
   recorder: MediaRecorder;
-  chunks: Blob[];
+  /** Chunk writes to IndexedDB, kept in order; awaited before finishing. */
+  writes: Promise<unknown>;
+  seq: number;
   audioCtx?: AudioContext;
   crop: Crop;
   url: string;
@@ -110,14 +113,44 @@ async function start(msg: OffscreenStart): Promise<RecResult> {
   const out = new MediaStream([generator, ...media.getAudioTracks()]);
   const candidates = out.getAudioTracks().length ? MIME_TYPES : MIME_TYPES.filter((m) => !m.includes('opus'));
   const mimeType = candidates.find((m) => MediaRecorder.isTypeSupported(m));
-  const recorder = new MediaRecorder(out, { mimeType, videoBitsPerSecond: 8_000_000 });
-  const chunks: Blob[] = [];
-  recorder.ondataavailable = (e) => e.data.size && chunks.push(e.data);
+  // MP4 is written in fragments that end at keyframes, so ask for one every second: otherwise most of
+  // the video stays inside the encoder until stop and a crash would lose it.
+  const recorder = new MediaRecorder(out, {
+    mimeType,
+    videoBitsPerSecond: 8_000_000,
+    videoKeyFrameIntervalDuration: 1000,
+  } as MediaRecorderOptions & { videoKeyFrameIntervalDuration: number });
+  const id = `rec_${Date.now().toString(36)}`;
+  await beginSession({
+    id,
+    title: msg.title,
+    url: msg.url,
+    createdAt: Date.now(),
+    durationMs: 0,
+    width: 0,
+    height: 0,
+    mime: recorder.mimeType || mimeType || 'video/webm',
+    chunks: 0,
+    size: 0,
+  });
+
+  // Each encoded chunk goes straight to IndexedDB with the session's latest metadata; nothing piles
+  // up in memory, and a crash leaves a recoverable recording behind.
+  recorder.ondataavailable = (e) => {
+    if (!e.data.size || !session) return;
+    const cur = session;
+    const seq = cur.seq++;
+    const elapsed = (cur.pausedAt ?? performance.now()) - cur.startedAt - cur.pausedMs;
+    const update = { durationMs: Math.round(elapsed), width: cur.width, height: cur.height, thumbnail: cur.thumbnail?.startsWith('data:') ? cur.thumbnail : undefined };
+    cur.writes = cur.writes.then(() => appendChunk(cur.id, seq, e.data, update)).catch((err) => console.error('Stylus: chunk write failed', err));
+  };
 
   session = Object.assign(s, {
+    id,
     media,
     recorder,
-    chunks,
+    writes: Promise.resolve(),
+    seq: 0,
     audioCtx,
     url: msg.url,
     title: msg.title,
@@ -140,24 +173,13 @@ function finish(): Promise<RecResult> {
       session = null;
       s.media.getTracks().forEach((t) => t.stop());
       await s.audioCtx?.close();
-      if (s.cancelled) return resolve({ ok: true });
-      const end = s.pausedAt ?? performance.now();
-      const blob = new Blob(s.chunks, { type: s.recorder.mimeType });
-      const id = `rec_${Date.now().toString(36)}`;
-      await saveRecording({
-        id,
-        title: s.title,
-        url: s.url,
-        createdAt: Date.now(),
-        durationMs: Math.round(end - s.startedAt - s.pausedMs),
-        width: s.width,
-        height: s.height,
-        mime: s.recorder.mimeType,
-        size: blob.size,
-        blob,
-        thumbnail: s.thumbnail?.startsWith('data:') ? s.thumbnail : undefined,
-      });
-      resolve({ ok: true, id });
+      await s.writes; // the final chunk arrives just before stop
+      if (s.cancelled) {
+        await discardSession(s.id);
+        return resolve({ ok: true });
+      }
+      const recording = await finalizeSession(s.id);
+      resolve(recording ? { ok: true, id: recording.id } : { ok: false, error: 'Nothing was recorded.' });
     };
     if (s.recorder.state !== 'inactive') s.recorder.stop();
   });

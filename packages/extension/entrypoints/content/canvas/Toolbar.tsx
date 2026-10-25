@@ -1,4 +1,4 @@
-import { canRedo, canUndo, ops, panels, redo, rule, setSiteEnabled, togglePanel, tool, undo, type PanelId, type Tool } from '../engine/store';
+import { aiOpen, canRedo, canUndo, ops, panels, redo, rule, setSiteEnabled, togglePanel, tool, undo, type PanelId, type Tool } from '../engine/store';
 import { Icon, type IconName } from './icons';
 
 const TOOLS: { id: Tool; icon: IconName; label: string; key: string }[] = [
@@ -35,6 +35,10 @@ export function Toolbar({ onExit }: { onExit: () => void }) {
           </button>
         ))}
       </div>
+      <div class="tb-sep" />
+      <button class={`tb-btn ai ${aiOpen.value ? 'on' : ''}`} title="Edit with AI (⌘K)" onClick={() => (aiOpen.value = !aiOpen.value)}>
+        <Icon name="sparkles" />
+      </button>
       <div class="tb-sep" />
       <div class="tb-group">
         <button class="tb-btn" title="Undo (⌘Z)" disabled={!canUndo.value} onClick={undo}>

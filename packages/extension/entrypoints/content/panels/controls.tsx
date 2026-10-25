@@ -150,7 +150,9 @@ export function ColorField(props: { label?: string; value: string; onChange: (v:
   const [open, setOpen] = useState(false);
   const transparent = isTransparent(props.value);
   const hex = toHex(props.value);
-  const { draft, setDraft, focused } = useDraft(transparent ? 'transparent' : hex);
+  // Compare edits against what the field shows: transparent also maps to #000000, so black must still count as a change.
+  const shown = transparent ? 'transparent' : hex;
+  const { draft, setDraft, focused } = useDraft(shown);
 
   const pick = async () => {
     try {
@@ -174,7 +176,7 @@ export function ColorField(props: { label?: string; value: string; onChange: (v:
           onFocus={() => (focused.current = true)}
           onBlur={() => {
             focused.current = false;
-            if (draft !== hex) props.onChange(draft.trim());
+            if (draft.trim() !== shown) props.onChange(draft.trim());
           }}
           onInput={(e) => setDraft(e.currentTarget.value)}
           onKeyDown={(e) => e.key === 'Enter' && (e.currentTarget as HTMLInputElement).blur()}

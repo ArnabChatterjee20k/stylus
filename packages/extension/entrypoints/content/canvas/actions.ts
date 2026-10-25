@@ -36,7 +36,18 @@ export function nudge(dx: number, dy: number) {
   const el = primary();
   if (!sel || !el) return;
   const s = scope.value.media || scope.value.state ? scope.value : undefined;
-  const current = stylesFor(ops.value, sel.selector, s).translate ?? getComputedStyle(el).translate;
+  const set = stylesFor(ops.value, sel.selector, s);
+  const cs = getComputedStyle(el);
+  if (cs.display === 'inline') {
+    // `translate` doesn't apply to inline boxes; offset them with relative positioning instead.
+    const left = Number.parseFloat(set.left ?? cs.left) || 0;
+    const top = Number.parseFloat(set.top ?? cs.top) || 0;
+    const props: Record<string, string> = { left: `${left + dx}px`, top: `${top + dy}px` };
+    if (cs.position === 'static') props.position = 'relative';
+    editStyles(props, 'nudge');
+    return;
+  }
+  const current = set.translate ?? cs.translate;
   const [x = 0, y = 0] = current === 'none' ? [] : current.split(/\s+/).map((v) => Number.parseFloat(v) || 0);
   const next = x + dx === 0 && y + dy === 0 ? '' : `${x + dx}px ${y + dy}px`;
   editStyles({ translate: next }, 'nudge');

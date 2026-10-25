@@ -1,6 +1,5 @@
-import { readFileSync } from 'node:fs';
 import type { BrowserContext, Page } from '@playwright/test';
-import { expect, test, type Stylus } from '../fixtures';
+import { downloadCount, expect, lastDownload, test, type Stylus } from '../fixtures';
 
 /**
  * Screenshots end to end: capture (element / visible tab / right-click) → stored PNG → editor →
@@ -53,10 +52,15 @@ async function decode(editor: Page, bytes: number[] | 'stored', points: [number,
 }
 
 async function download(editor: Page) {
-  const dl = editor.waitForEvent('download');
+  const before = await downloadCount(editor);
   await editor.locator('.btn.primary', { hasText: 'Download PNG' }).click();
-  const file = await dl;
-  return { name: file.suggestedFilename(), bytes: [...readFileSync((await file.path())!)] };
+  await expect.poll(() => downloadCount(editor)).toBe(before + 1);
+  return lastDownload(editor);
+}
+
+/** Several exports from one screenshot: keep it around after each download. */
+async function keepCopies(editor: Page) {
+  await editor.locator('.keep input').check();
 }
 
 const isRed = ([r, g, b]: number[]) => r > 180 && g < 70 && b < 100;
@@ -129,9 +133,10 @@ test('exports the styled image: background, frame, aspect ratio and 2× size', a
   const stored = await decode(editor, 'stored');
 
   // Default style: Candy gradient (pink in the top-left), window frame, padding.
+  await keepCopies(editor);
   await editor.locator('.seg button', { hasText: '1×' }).click();
   const one = await download(editor);
-  expect(one.name).toMatch(/article#?second.*\.png$|\.png$/);
+  expect(one.mime).toBe('image/png');
   const a = await decode(editor, one.bytes, [[0.01, 0.01], [0.5, 0.6]]);
   expect(a.width).toBeGreaterThan(stored.width);
   const [r, g, b] = a.pixels[0];
@@ -162,6 +167,9 @@ test('transparent background and no frame export just the rounded screenshot', a
   await editor.locator('.seg button', { hasText: '1×' }).click();
   await editor.waitForTimeout(400);
   const out = await decode(editor, (await download(editor)).bytes, [[0, 0], [0.5, 0.5]]);
+  // Downloaded and not kept: the screenshot is gone from Stylus.
+  await expect(editor.locator('.status')).toHaveText('Saved to Downloads and removed from Stylus');
+  await expect(editor.locator('.empty')).toBeVisible();
   expect(out.pixels[0][3]).toBe(0); // fully transparent corner
   expect(isRed(out.pixels[1])).toBe(true);
 });
@@ -198,4 +206,26 @@ test('delete asks first, then removes the screenshot', async ({ stylus, context 
   await editor.locator('.link.danger', { hasText: 'Delete screenshot' }).click();
   await editor.locator('.confirm .btn.danger').click();
   await expect(editor.locator('.empty')).toBeVisible();
+});
+
+test('downloading removes the screenshot from Stylus unless "keep a copy" is on', async ({ stylus, context }) => {
+  const editor = await shootSecondCard(stylus, context);
+  await keepCopies(editor);
+  await download(editor);
+  await expect(editor.locator('.status')).toHaveText('Saved to Downloads');
+  await expect(editor.locator('.item')).toHaveCount(1);
+  await editor.locator('.keep input').uncheck();
+  await download(editor);
+  await expect(editor.locator('.item')).toHaveCount(0);
+  const stored = await editor.evaluate(
+    () =>
+      new Promise<number>((resolve) => {
+        const req = indexedDB.open('stylus-captures');
+        req.onsuccess = () => {
+          const c = req.result.transaction('captures').objectStore('captures').count();
+          c.onsuccess = () => resolve(c.result);
+        };
+      }),
+  );
+  expect(stored).toBe(0);
 });

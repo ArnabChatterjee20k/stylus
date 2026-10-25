@@ -2,6 +2,7 @@
 import { test as base, chromium, expect, type BrowserContext, type Locator, type Page, type Worker } from '@playwright/test';
 import { createServer, type Server } from 'node:http';
 import { mkdtempSync, readFileSync, existsSync } from 'node:fs';
+export { readFileSync };
 import { tmpdir } from 'node:os';
 import { createHash } from 'node:crypto';
 import { dirname, join, resolve } from 'node:path';
@@ -205,3 +206,23 @@ export class Stylus {
     }, url);
   }
 }
+
+/**
+ * The newest finished download, read through chrome.downloads from an extension page. Playwright
+ * redirects downloads into its own temp folder, so tests never write to the real Downloads folder.
+ */
+export async function lastDownload(extensionPage: Page) {
+  const item = await extensionPage.evaluate(async () => {
+    for (let i = 0; i < 50; i++) {
+      const [d] = await chrome.downloads.search({ orderBy: ['-startTime'], limit: 1 });
+      if (d?.state === 'complete') return { filename: d.filename, size: d.fileSize, mime: d.mime };
+      await new Promise((r) => setTimeout(r, 100));
+    }
+    return null;
+  });
+  if (!item) throw new Error('no finished download');
+  return { ...item, bytes: [...readFileSync(item.filename)] };
+}
+
+export const downloadCount = (extensionPage: Page) =>
+  extensionPage.evaluate(async () => (await chrome.downloads.search({ state: 'complete' })).length);

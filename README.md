@@ -9,7 +9,17 @@ pnpm install
 pnpm dev        # opens Chrome with the extension loaded + HMR
 pnpm build      # → packages/extension/.output/chrome-mv3 (load unpacked via chrome://extensions)
 pnpm test       # unit tests (op model, CSS compiler, history)
-pnpm e2e        # builds, then drives the real extension in Chromium (set CHROME=/path/to/chrome if needed)
+pnpm e2e        # builds, then runs the Playwright suite against the real extension
+```
+
+### End-to-end tests
+
+`packages/extension/e2e` loads the built extension into Chromium with a fresh profile per test and drives it like a user would. Fixture pages cover a normal page, a SPA that re-renders, and a hostile page (max z-index overlay, `!important` resets). The suite covers edit mode, selection and keyboard navigation, tools, Layers, every Design control, scopes (`:hover`, breakpoints), theme presets, focus mode, the Changes panel, undo/redo, persistence and no-flash loading, per-site isolation, cross-tab sync, and SPA resilience.
+
+```sh
+npx playwright install chromium            # once; or point CHROME=/path/to/chrome at any Chromium
+pnpm e2e                                   # headless run, HTML report in packages/extension/e2e/report
+pnpm --filter @stylus/extension e2e:ui     # Playwright UI mode for debugging
 ```
 
 ## Use

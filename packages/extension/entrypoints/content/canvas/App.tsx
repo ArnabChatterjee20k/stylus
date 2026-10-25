@@ -56,8 +56,9 @@ export function App({ onExit }: { onExit: () => void }) {
   return (
     <div class="root">
       <Overlay />
-      <Guides />
       <Handles />
+      {/* After the handles, so distance labels are never hidden under one. */}
+      <Guides />
       <Toolbar onExit={onExit} />
       {panels.value.layers && <Layers />}
       {panels.value.design && <Design />}

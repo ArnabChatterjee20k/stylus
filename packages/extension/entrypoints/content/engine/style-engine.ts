@@ -38,6 +38,16 @@ const moveOriginals = new Map<Element, { parent: Element; next: Element | null }
 /** Op id → element. After a move, a positional selector can match a different element, so remember the one we moved. */
 const moveTargets = new Map<string, Element>();
 
+/** Selector of the move op that already moved `el`, so moving it again updates that op. */
+export function movedSelector(el: Element): string | undefined {
+  for (const [id, target] of moveTargets) {
+    if (target !== el) continue;
+    const op = moveOps().find((o) => o.id === id);
+    if (op) return op.selector;
+  }
+  return undefined;
+}
+
 function safeQuery(selector: string): Element | null {
   try {
     return document.querySelector(selector);

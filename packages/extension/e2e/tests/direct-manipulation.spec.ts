@@ -88,3 +88,131 @@ test.describe('handles', () => {
     expect(Math.abs((await num(stylus, '#second', 'width')) - (w0 + 13))).toBeLessThanOrEqual(4);
   });
 });
+
+const order = (page: Page) => page.$$eval('main > *', (els) => els.map((e) => e.id || e.localName));
+const center = async (page: Page, sel: string) => {
+  const b = (await page.locator(sel).boundingBox())!;
+  return { x: b.x + b.width / 2, y: b.y + b.height / 2, b };
+};
+
+test.describe('nudge', () => {
+  test('arrow keys move the selection by 1px, Shift by 10px, and undo as one step', async ({ stylus, page }) => {
+    await stylus.open();
+    await stylus.edit();
+    await stylus.pick('#second');
+    const before = (await page.locator('#second').boundingBox())!;
+    for (let i = 0; i < 3; i++) await page.keyboard.press('ArrowRight');
+    await page.keyboard.press('Shift+ArrowDown');
+    const after = (await page.locator('#second').boundingBox())!;
+    expect(Math.round(after.x - before.x)).toBe(3);
+    expect(Math.round(after.y - before.y)).toBe(10);
+    // Layout of neighbours is untouched (translate, not margin).
+    expect(await order(page)).toEqual(['first', 'second', 'third', 'aside']);
+    await page.keyboard.press('Meta+z');
+    expect(await stylus.style('#second', 'translate')).toBe('none');
+  });
+});
+
+test.describe('reorder', () => {
+  test('dragging the selection past a sibling moves it there, and persists', async ({ stylus, page }) => {
+    await stylus.open();
+    await stylus.edit();
+    await stylus.pick('#first');
+    const from = await center(page, '#first');
+    const to = await center(page, '#second');
+    await page.mouse.move(from.x, from.y);
+    await page.mouse.down();
+    for (let i = 1; i <= 10; i++) await page.mouse.move(from.x + ((to.b.x + to.b.width - 5 - from.x) * i) / 10, from.y);
+    await expect(stylus.ui('.drop-line')).toBeVisible();
+    await page.mouse.up();
+    await expect(stylus.ui('.drop-line')).toBeHidden();
+    expect(await order(page)).toEqual(['second', 'first', 'third', 'aside']);
+    await expect(stylus.crumb()).toHaveText('article#first'); // the drop didn't re-select
+
+    await stylus.persisted((r) => !!r?.ops.some((o) => o.kind === 'move'));
+    await page.reload();
+    await page.waitForFunction(() => !!document.getElementById('__stylus-style'));
+    expect(await order(page)).toEqual(['second', 'first', 'third', 'aside']);
+  });
+
+  test('moving the same element again updates one move, and undo restores the order', async ({ stylus, page }) => {
+    await stylus.open();
+    await stylus.edit();
+    await stylus.pick('#first');
+    for (const target of ['#second', '#third']) {
+      const from = await center(page, '#first');
+      const to = await center(page, target);
+      await page.mouse.move(from.x, from.y);
+      await page.mouse.down();
+      for (let i = 1; i <= 10; i++) await page.mouse.move(from.x + ((to.b.x + to.b.width - 5 - from.x) * i) / 10, from.y);
+      await page.mouse.up();
+    }
+    expect(await order(page)).toEqual(['second', 'third', 'first', 'aside']);
+    await stylus.toolbarButton('Changes').click();
+    await expect(stylus.ui('.changes li')).toHaveCount(1);
+    await expect(stylus.ui('.changes li')).toContainText('Moved');
+    await page.keyboard.press('Meta+z');
+    expect(await order(page)).toEqual(['second', 'first', 'third', 'aside']);
+    await page.keyboard.press('Meta+z');
+    expect(await order(page)).toEqual(['first', 'second', 'third', 'aside']);
+  });
+
+  test('a small wobble while clicking does not move anything', async ({ stylus, page }) => {
+    await stylus.open();
+    await stylus.edit();
+    await stylus.pick('#first');
+    const c = await center(page, '#first');
+    await page.mouse.move(c.x, c.y);
+    await page.mouse.down();
+    await page.mouse.move(c.x + 2, c.y + 1);
+    await page.mouse.up();
+    expect(await order(page)).toEqual(['first', 'second', 'third', 'aside']);
+  });
+});
+
+test.describe('measure and layout guides', () => {
+  test('holding Alt shows the distance to the hovered element', async ({ stylus, page }) => {
+    await stylus.open();
+    await stylus.edit();
+    await stylus.pick('#second');
+    const third = (await page.locator('#third').boundingBox())!;
+    await page.keyboard.down('Alt');
+    // Inside the card's padding, so the hovered element is the card itself, not its text.
+    await page.mouse.move(third.x + 6, third.y + third.height - 6);
+    await page.mouse.move(third.x + 7, third.y + third.height - 6);
+    await expect(stylus.ui('.m-line')).toHaveCount(1);
+    await expect(stylus.ui('.m-label')).toHaveText('16'); // the flex gap
+    await page.keyboard.up('Alt');
+    await expect(stylus.ui('.m-line')).toHaveCount(0);
+  });
+
+  test('Alt over a parent shows the distance to each of its edges', async ({ stylus, page }) => {
+    await stylus.open();
+    await stylus.edit();
+    await stylus.pick('#title');
+    const card = (await page.locator('#first').boundingBox())!;
+    await page.keyboard.down('Alt');
+    await page.mouse.move(card.x + 4, card.y + card.height - 4);
+    await page.mouse.move(card.x + 5, card.y + card.height - 4);
+    await expect(stylus.ui('.m-line')).toHaveCount(4);
+    await page.keyboard.up('Alt');
+  });
+
+  test('a selected flex container shows its children and gaps', async ({ stylus }) => {
+    await stylus.open();
+    await stylus.edit();
+    await stylus.pick('main');
+    await expect(stylus.ui('.g-kid')).toHaveCount(4);
+    await expect(stylus.ui('.g-gap')).toHaveCount(3);
+  });
+
+  test('a grid container shows its column tracks', async ({ stylus }) => {
+    await stylus.open();
+    await stylus.edit();
+    await stylus.pick('main');
+    const design = stylus.panel('Design');
+    await stylus.field(design, 'Display').locator('select').selectOption('grid');
+    await stylus.setInput(stylus.field(design, 'Columns').locator('input'), '1fr 1fr');
+    await expect.poll(() => stylus.ui('.g-track').count()).toBeGreaterThan(3);
+  });
+});

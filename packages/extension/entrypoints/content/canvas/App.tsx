@@ -6,6 +6,7 @@ import { Design } from '../panels/Design';
 import { Layers } from '../panels/Layers';
 import { Theme } from '../panels/Theme';
 import { BottomBar } from './BottomBar';
+import { Guides } from './Guides';
 import { Handles } from './Handles';
 import { Overlay } from './Overlay';
 import { Toolbar } from './Toolbar';
@@ -55,6 +56,7 @@ export function App({ onExit }: { onExit: () => void }) {
   return (
     <div class="root">
       <Overlay />
+      <Guides />
       <Handles />
       <Toolbar onExit={onExit} />
       {panels.value.layers && <Layers />}

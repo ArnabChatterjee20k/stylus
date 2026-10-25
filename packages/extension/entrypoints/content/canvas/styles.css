@@ -58,6 +58,15 @@ code, .mono { font-family: var(--mono); font-size: 10.5px; }
 }
 .label[data-kind='hover'] { background: #1a1a1a; border: 1px solid var(--accent); }
 
+/* ---------- Guides: layout, redlines, drop line ---------- */
+.guides, .guides * { position: absolute; left: 0; top: 0; pointer-events: none; }
+.g-kid { outline: 1px dashed rgba(151, 71, 255, 0.85); }
+.g-gap { background: repeating-linear-gradient(45deg, rgba(255, 0, 140, 0.22) 0 2px, transparent 2px 6px); }
+.g-track { background: rgba(151, 71, 255, 0.6); }
+.m-line { background: #f24822; }
+.m-label { padding: 1px 5px; border-radius: 3px; background: #f24822; color: #fff; font: 600 10px/14px var(--font); }
+.drop-line { display: none; background: var(--accent); border-radius: 1px; box-shadow: 0 0 0 1px #fff; }
+
 /* ---------- Handles ---------- */
 .handles, .handles > * { position: absolute; left: 0; top: 0; }
 .handle { display: none; pointer-events: auto; background: #fff; border: 1.5px solid var(--accent); border-radius: 2px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3); }

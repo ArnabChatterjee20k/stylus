@@ -110,7 +110,7 @@ export class Stylus {
   }
 
   /** Right-click an element, then trigger a Stylus context-menu action (as the menu's click handler does). */
-  async contextAction(selector: string, action: 'hide' | 'text' | 'style', page = this.page) {
+  async contextAction(selector: string, action: 'hide' | 'text' | 'style' | 'shot', page = this.page) {
     await page.click(selector, { button: 'right' });
     await page.keyboard.press('Escape'); // dismiss the native menu
     const url = page.url();

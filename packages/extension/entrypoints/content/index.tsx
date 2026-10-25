@@ -3,6 +3,7 @@ import { effect } from '@preact/signals';
 import { browser } from 'wxt/browser';
 import { createShadowRootUi, defineContentScript, type ShadowRootContentScriptUi } from '#imports';
 import { App } from './canvas/App';
+import { hideElement, startTextEdit } from './canvas/actions';
 import { startPicker, stopPicker } from './canvas/picker';
 import { editMode, loadRule, ops, rule, select, uiHost } from './engine/store';
 import { startEngine } from './engine/style-engine';
@@ -60,11 +61,33 @@ export default defineContentScript({
       startPicker();
     };
 
+    // Remember what was right-clicked, for the context menu actions.
+    let contextTarget: Element | null = null;
+    document.addEventListener(
+      'contextmenu',
+      (e) => {
+        const t = e.composedPath()[0];
+        if (t instanceof Element && !(uiHost.value && e.composedPath().includes(uiHost.value))) contextTarget = t;
+      },
+      true,
+    );
+
+    const onContextAction = async (action: string) => {
+      const el = contextTarget;
+      if (!el?.isConnected) return;
+      if (action === 'hide') return hideElement(el);
+      await enter();
+      if (action === 'text') startTextEdit(el);
+      else select([el]);
+    };
+
     browser.runtime.onMessage.addListener((msg: unknown) => {
-      const type = (msg as { type?: string } | null)?.type;
-      if (type === 'stylus:toggle') {
+      const m = msg as { type?: string; action?: string } | null;
+      if (m?.type === 'stylus:toggle') {
         if (editMode.value) exit();
         else void enter();
+      } else if (m?.type === 'stylus:context' && m.action) {
+        void onContextAction(m.action);
       }
     });
 

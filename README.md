@@ -1,53 +1,107 @@
-# Stylus: turn any webpage into a design canvas
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://shieldcn.dev/header/graph.svg?title=Stylus&subtitle=Turn+any+webpage+into+a+design+canvas&logo=googlechrome&align=left&mode=dark" />
+    <img alt="Stylus. Turn any webpage into a design canvas." src="https://shieldcn.dev/header/graph.svg?title=Stylus&subtitle=Turn+any+webpage+into+a+design+canvas&logo=googlechrome&align=left&mode=light" />
+  </picture>
+</p>
 
-A Chromium (MV3) extension for editing live pages the way you'd edit a Figma frame: select elements, hide distractions, rewrite text, restyle anything, and apply comfort themes. Edits are saved per site and re-applied on every visit.
+<p align="center">
+  <a href="https://developer.chrome.com/docs/extensions/develop/migrate/what-is-mv3"><img alt="Chrome Manifest V3" src="https://shieldcn.dev/badge/Chrome-Manifest_V3.svg?logo=googlechrome&variant=secondary" /></a>
+  <a href="https://www.typescriptlang.org"><img alt="TypeScript 5.9" src="https://shieldcn.dev/badge/TypeScript-5.9.svg?logo=typescript&variant=secondary" /></a>
+  <a href="https://wxt.dev"><img alt="Built with WXT" src="https://shieldcn.dev/badge/built_with-WXT.svg?logo=wxt&variant=secondary" /></a>
+  <a href="https://preactjs.com"><img alt="Preact 10" src="https://shieldcn.dev/badge/Preact-10.svg?logo=preact&variant=secondary" /></a>
+  <a href="packages/extension/e2e"><img alt="End-to-end tests with Playwright" src="https://shieldcn.dev/badge/e2e-Playwright.svg?logo=false&variant=secondary" /></a>
+</p>
+
+Stylus is a Chrome extension that lets you edit any live webpage the way you edit a frame in Figma. Click an element to select it, then hide it, rewrite its text, or change its styles in a visual panel. Stylus saves your edits per site and applies them again every time you visit.
+
+Use it to strip distractions from a page, make a site easier on the eyes, or try a design change on a real page before writing any code.
+
+## What you can do
+
+- Hide anything. Click an element and press Delete, or switch to the Zap tool and click things away one by one.
+- Edit text in place. Double-click any text, type, and press Enter.
+- Restyle elements in the Design panel. It covers layout and flexbox alignment, size, margin and padding, typography, background, border, shadow, blur, and opacity. Drag a field's label to change its value.
+- Write CSS directly, either for the selected element or for the whole site.
+- Style hover and focus states, or limit an edit to one screen size (mobile, tablet, desktop).
+- Change how the whole page looks from the Theme panel. Presets include Dark, Dim, Sepia, Night, Mono, Contrast, and Reading. You can also set the page background, text color, link color, font, and zoom.
+- Turn on Focus mode to hide cookie banners, ads, popups, and sticky bars in one click.
+- Browse the page's elements as a tree in the Layers panel, search it by name or CSS selector, and show or hide items.
+- Review every edit in the Changes panel. You can switch each one off, delete it, or export the site's edits as JSON and import them elsewhere.
+- Undo and redo any edit. Edits sync to other open tabs of the same site.
+
+## Install
+
+Stylus is not on the Chrome Web Store yet. Build it and load it unpacked.
+
+```sh
+pnpm install
+pnpm build
+```
+
+1. Open `chrome://extensions` and turn on Developer mode.
+2. Click "Load unpacked" and choose `packages/extension/.output/chrome-mv3`. The `.output` folder is hidden in Finder, so press Cmd+Shift+G in the file dialog and paste the full path.
+3. Reload any tabs that were open before you installed the extension.
+
+## Use
+
+Press Alt+Shift+S, or click the Stylus icon in the toolbar, to turn edit mode on or off. Outside edit mode, Stylus applies your saved edits and shows no UI.
+
+| Key | Action |
+| --- | --- |
+| V, H, T | Select tool, Zap tool (click to hide), Text tool |
+| Click, Shift-click | Select one element, add to the selection |
+| Double-click | Edit text (Enter saves, Esc cancels) |
+| Esc, Enter, Tab | Select the parent, first child, next sibling |
+| S | Select all elements similar to the current one |
+| Delete | Hide the selection |
+| Cmd+Z, Cmd+Shift+Z | Undo, redo |
+| L, D | Show or hide the Layers and Design panels |
+
+The bar at the bottom of the screen shows the selected element's ancestors, quick actions (Similar, Isolate, Edit text, Hide), and the state and screen size that new style edits apply to.
 
 ## Develop
 
 ```sh
-pnpm install
-pnpm dev        # opens Chrome with the extension loaded + HMR
-pnpm build      # → packages/extension/.output/chrome-mv3 (load unpacked via chrome://extensions)
-pnpm test       # unit tests (op model, CSS compiler, history)
-pnpm e2e        # builds, then runs the Playwright suite against the real extension
+pnpm dev        # opens Chrome with the extension loaded and hot reload on
+pnpm build      # writes the extension to packages/extension/.output/chrome-mv3
+pnpm typecheck
+pnpm test       # unit tests for the op model, CSS compiler, and undo history
+pnpm e2e        # builds the extension, then runs the Playwright suite against it
 ```
 
 ### End-to-end tests
 
-`packages/extension/e2e` loads the built extension into Chromium with a fresh profile per test and drives it like a user would. Fixture pages cover a normal page, a SPA that re-renders, and a hostile page (max z-index overlay, `!important` resets). The suite covers edit mode, selection and keyboard navigation, tools, Layers, every Design control, scopes (`:hover`, breakpoints), theme presets, focus mode, the Changes panel, undo/redo, persistence and no-flash loading, per-site isolation, cross-tab sync, and SPA resilience.
+The suite in `packages/extension/e2e` loads the built extension into Chromium with a fresh profile for each test and drives it with the mouse and keyboard. It uses three fixture pages: an ordinary page, a single-page app that re-renders its content, and a hostile page with a full-screen overlay at the maximum z-index and `!important` style resets.
+
+The 66 tests check edit mode, selection and keyboard navigation, every tool, the Layers search, each Design control, hover and breakpoint edits, all theme presets, Focus mode, the Changes panel, undo and redo, persistence across reloads, loading without a flash of the original page, per-site isolation, sync between tabs, and edits surviving re-renders.
 
 ```sh
-npx playwright install chromium            # once; or point CHROME=/path/to/chrome at any Chromium
+npx playwright install chromium            # once, or set CHROME=/path/to/chrome
 pnpm e2e                                   # headless run, HTML report in packages/extension/e2e/report
 pnpm --filter @stylus/extension e2e:ui     # Playwright UI mode for debugging
 ```
 
-## Use
+## How it works
 
-Click the toolbar icon or press **Alt+Shift+S** to toggle edit mode.
+Stylus stores every change as a small JSON record called an `EditOp`. There are five kinds: `style`, `hide`, `text`, `rawCss`, and `preset`. A site's ops live in `chrome.storage.local` under its origin.
 
-| Key | Action |
-| --- | --- |
-| V / H / T | Select / Zap (click to hide) / Edit text tools |
-| Click, Shift-click | Select, multi-select |
-| Double-click | Edit text inline (Enter saves, Esc cancels) |
-| Esc / Enter / Tab | Parent / first child / next sibling |
-| S | Select all similar elements |
-| Delete | Hide selection |
-| ⌘Z / ⌘⇧Z | Undo / redo |
-| L / D | Toggle Layers / Design panels |
-
-Panels: **Layers** (DOM tree, search, show/hide), **Design** (layout, size, box model, typography, fill, border, effects, raw CSS per element and per site), **Theme & comfort** (dark/dim/sepia/night/mono/contrast/reading presets, page colors, font, zoom, focus mode), and **Changes** (every edit, which you can toggle, delete, export, or import). The bottom bar holds breadcrumbs, quick actions, and the state (`:hover`…) and breakpoint scope that new style edits apply to.
-
-## Layout
+On page load, the content script reads the site's ops and compiles the style, hide, and preset ops into one `<style>` element. It holds the first paint until that finishes, so hidden elements never flash. A `MutationObserver` applies text ops again whenever the page re-renders them.
 
 ```
-packages/shared      op model (zod), op → CSS compiler, edit helpers, undo history
-packages/extension   WXT app
-  entrypoints/background.ts        toolbar action, shortcut, badge
-  entrypoints/content/engine       storage + state (signals), style engine (document_start)
-  entrypoints/content/canvas       overlay, picker/keyboard, toolbar, bottom bar, actions
-  entrypoints/content/panels       Layers, Design, Theme, Changes + shared controls
+packages/shared      EditOp schema (zod), op-to-CSS compiler, edit helpers, undo history
+packages/extension   the WXT extension
+  entrypoints/background.ts        toolbar button, keyboard shortcut, badge
+  entrypoints/content/engine       storage and state, style engine
+  entrypoints/content/canvas       overlay, element picker, toolbar, bottom bar
+  entrypoints/content/panels       Layers, Design, Theme, and Changes panels
+  e2e                              Playwright tests and fixture pages
 ```
 
-Every change is a declarative `EditOp` (`style`, `hide`, `text`, `rawCss`, `preset`). CSS-type ops compile into a single `<style>` element. Text ops are re-applied via a MutationObserver, so they survive SPA re-renders. The same op list will be the interface for the AI/MCP bridge.
+## Roadmap
+
+- Resize, nudge, and reorder elements by dragging handles on the page, and measure distances between elements.
+- A Cmd+K prompt that asks an AI model for style changes and shows them as a preview you accept or reject.
+- An MCP server so coding agents can read your edits, apply styles to the open tab, and port the changes into a codebase.
+- Design token extraction, and copying a selection as CSS or Tailwind classes.
+- Named versions per site with a before and after comparison.

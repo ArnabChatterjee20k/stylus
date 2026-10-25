@@ -16,6 +16,20 @@ export function editStyle(prop: string, value: string) {
   commit(setStyle(ops.value, sel.selector, prop, value, { before, scope: s, fingerprint: fingerprint(el) }), `${sel.selector}|${prop}`);
 }
 
+/** Set several properties as one undo step (`key` coalesces repeated calls, e.g. during a drag). */
+export function editStyles(props: Record<string, string>, key: string) {
+  const sel = selection.value;
+  const el = primary();
+  if (!sel || !el) return;
+  const cs = getComputedStyle(el);
+  const s = scope.value.media || scope.value.state ? scope.value : undefined;
+  let next = ops.value;
+  for (const [prop, value] of Object.entries(props)) {
+    next = setStyle(next, sel.selector, prop, value, { before: cs.getPropertyValue(prop), scope: s, fingerprint: fingerprint(el) });
+  }
+  commit(next, `${sel.selector}|${key}`);
+}
+
 export function hideSelection() {
   const sel = selection.value;
   const el = primary();

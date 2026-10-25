@@ -1,5 +1,9 @@
 import { canRedo, canUndo, ops, panels, redo, rule, setSiteEnabled, togglePanel, tool, undo, type PanelId, type Tool } from '../engine/store';
+import { useState } from 'preact/hooks';
+import { selection } from '../engine/store';
+import { labelFor } from '../lib/selector';
 import { Icon, type IconName } from './icons';
+import { openLibrary, startRecording } from './recorder';
 
 const TOOLS: { id: Tool; icon: IconName; label: string; key: string }[] = [
   { id: 'select', icon: 'select', label: 'Select', key: 'V' },
@@ -36,6 +40,8 @@ export function Toolbar({ onExit }: { onExit: () => void }) {
         ))}
       </div>
       <div class="tb-sep" />
+      <RecordMenu />
+      <div class="tb-sep" />
       <div class="tb-group">
         <button class="tb-btn" title="Undo (⌘Z)" disabled={!canUndo.value} onClick={undo}>
           <Icon name="undo" />
@@ -55,6 +61,38 @@ export function Toolbar({ onExit }: { onExit: () => void }) {
       <button class="tb-btn" title="Exit edit mode (Alt+Shift+S)" onClick={onExit}>
         <Icon name="close" />
       </button>
+    </div>
+  );
+}
+
+function RecordMenu() {
+  const [open, setOpen] = useState(false);
+  const target = selection.value?.els.find((e) => e.isConnected);
+  const pick = (fn: () => unknown) => () => {
+    setOpen(false);
+    fn();
+  };
+  return (
+    <div class="tb-rec">
+      <button class={`tb-btn rec ${open ? 'on' : ''}`} title="Record" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)}>
+        <Icon name="record" />
+      </button>
+      {open && (
+        <div class="rec-menu" role="menu">
+          <button role="menuitem" disabled={!target} onClick={pick(() => startRecording('element'))}>
+            Record selected element
+            <small>{target ? labelFor(target) : 'Select an element first'}</small>
+          </button>
+          <button role="menuitem" onClick={pick(() => startRecording('tab'))}>
+            Record whole tab
+            <small>Everything visible in this tab</small>
+          </button>
+          <hr />
+          <button role="menuitem" onClick={pick(openLibrary)}>
+            Open recordings
+          </button>
+        </div>
+      )}
     </div>
   );
 }

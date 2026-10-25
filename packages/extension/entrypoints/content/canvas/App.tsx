@@ -1,6 +1,6 @@
 import { useEffect } from 'preact/hooks';
 import { hasPreset } from '@stylus/shared';
-import { ops, panels, scope, selection, tool, uiHost } from '../engine/store';
+import { ops, panels, recording, scope, selection, tool, uiHost } from '../engine/store';
 import { Changes } from '../panels/Changes';
 import { Design } from '../panels/Design';
 import { Layers } from '../panels/Layers';
@@ -9,12 +9,14 @@ import { BottomBar } from './BottomBar';
 import { Guides } from './Guides';
 import { Handles } from './Handles';
 import { Overlay } from './Overlay';
+import { RecordingLayer } from './RecordingLayer';
 import { Toolbar } from './Toolbar';
 
 const CANVAS_CSS = `
 html.__stylus-editing, html.__stylus-editing * { cursor: default !important; }
 html.__stylus-tool-zap, html.__stylus-tool-zap * { cursor: crosshair !important; }
 html.__stylus-tool-text, html.__stylus-tool-text * { cursor: text !important; }
+html.__stylus-recording, html.__stylus-recording * { cursor: none !important; }
 [data-stylus-editing] { outline: 2px solid #0d99ff !important; outline-offset: 2px !important; cursor: text !important; }
 `;
 
@@ -53,6 +55,15 @@ export function App({ onExit }: { onExit: () => void }) {
     els.forEach((el) => el.classList.add(cls));
     return () => els.forEach((el) => el.classList.remove(cls));
   }, [state, els]);
+
+  // While recording, only the recording layer shows: the editing UI would end up in the video.
+  if (recording.value) {
+    return (
+      <div class="root">
+        <RecordingLayer />
+      </div>
+    );
+  }
 
   return (
     <div class="root">

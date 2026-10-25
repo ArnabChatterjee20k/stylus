@@ -24,6 +24,19 @@ export const canUndo = signal(false);
 export const canRedo = signal(false);
 /** The shadow host of our UI, so pickers can ignore it. */
 export const uiHost = signal<HTMLElement | null>(null);
+/** Screen recording in progress (or counting down). The editing UI hides while it runs. */
+export type RecordingState = {
+  phase: 'countdown' | 'recording' | 'paused' | 'saving';
+  mode: 'element' | 'tab';
+  target: Element | null;
+  count: number;
+  startedAt: number;
+  pausedMs: number;
+  pausedAt: number | null;
+  error?: string;
+};
+export const recording = signal<RecordingState | null>(null);
+
 /** Alt is held: show distances between the selection and the hovered element. */
 export const measuring = signal(false);
 

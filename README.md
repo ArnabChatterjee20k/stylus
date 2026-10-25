@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://shieldcn.dev/header/graph.svg?title=Stylus&subtitle=Turn+any+webpage+into+a+design+canvas&logo=googlechrome&align=left&mode=dark" />
-    <img alt="Stylus. Turn any webpage into a design canvas." src="https://shieldcn.dev/header/graph.svg?title=Stylus&subtitle=Turn+any+webpage+into+a+design+canvas&logo=googlechrome&align=left&mode=light" />
+    <source media="(prefers-color-scheme: dark)" srcset="https://shieldcn.dev/header/graph.svg?title=Stylus&subtitle=Turn+any+webpage+into+a+design+canvas&logoColor=ff4d94&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI%2BPHBhdGggZmlsbD0iIzAwMCIgZmlsbC1ydWxlPSJldmVub2RkIiBkPSJNMiA3YTUgNSAwIDAgMSA1LTVoMTBhNSA1IDAgMCAxIDUgNXYxMGE1IDUgMCAwIDEtNSA1SDdhNSA1IDAgMCAxLTUtNXpNNCA5LjZINy4yVjExLjRhMS4zIDEuMyAwIDAgMCAyLjYgMFY5LjZIMTQuMlYxMy42YTEuMyAxLjMgMCAwIDAgMi42IDBWOS42SDIwVjE3YTMgMyAwIDAgMS0zIDNIN2EzIDMgMCAwIDEtMy0zek02LjYgNS4zaDIuOGEuNy43IDAgMCAxIDAgMS40SDYuNmEuNy43IDAgMCAxIDAtMS40eiIvPjwvc3ZnPgo%3D&align=left&mode=dark" />
+    <img alt="Stylus. Turn any webpage into a design canvas." src="https://shieldcn.dev/header/graph.svg?title=Stylus&subtitle=Turn+any+webpage+into+a+design+canvas&logoColor=ff4d94&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI%2BPHBhdGggZmlsbD0iIzAwMCIgZmlsbC1ydWxlPSJldmVub2RkIiBkPSJNMiA3YTUgNSAwIDAgMSA1LTVoMTBhNSA1IDAgMCAxIDUgNXYxMGE1IDUgMCAwIDEtNSA1SDdhNSA1IDAgMCAxLTUtNXpNNCA5LjZINy4yVjExLjRhMS4zIDEuMyAwIDAgMCAyLjYgMFY5LjZIMTQuMlYxMy42YTEuMyAxLjMgMCAwIDAgMi42IDBWOS42SDIwVjE3YTMgMyAwIDAgMS0zIDNIN2EzIDMgMCAwIDEtMy0zek02LjYgNS4zaDIuOGEuNy43IDAgMCAxIDAgMS40SDYuNmEuNy43IDAgMCAxIDAtMS40eiIvPjwvc3ZnPgo%3D&align=left&mode=light" />
   </picture>
 </p>
 

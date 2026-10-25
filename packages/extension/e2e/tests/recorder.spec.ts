@@ -37,10 +37,15 @@ async function stopAndOpenLibrary(context: BrowserContext, stop: () => Promise<u
 async function inspectVideo(library: Page) {
   return library.evaluate(async () => {
     const video = document.querySelector('video')!;
-    if (video.readyState < 2) await new Promise((r) => video.addEventListener('loadeddata', r, { once: true }));
+    const waitFor = (ev: string) =>
+      new Promise<boolean>((r) => {
+        video.addEventListener(ev, () => r(true), { once: true });
+        setTimeout(() => r(false), 8000);
+      });
+    if (video.readyState < 2 && !(await waitFor('loadeddata'))) throw new Error(`no frame decoded (readyState ${video.readyState})`);
     video.pause();
     video.currentTime = Math.min(0.6, Number.isFinite(video.duration) ? video.duration / 2 : 0.6);
-    await new Promise((r) => video.addEventListener('seeked', r, { once: true }));
+    if (!(await waitFor('seeked'))) throw new Error(`seek never finished (readyState ${video.readyState}, duration ${video.duration})`);
     const c = document.createElement('canvas');
     c.width = video.videoWidth;
     c.height = video.videoHeight;
@@ -198,4 +203,133 @@ test('library: rename and delete a recording', async ({ stylus, context }) => {
   await expect(library.locator('.confirm')).toContainText('Delete this recording?');
   await library.locator('.confirm .button.danger').click();
   await expect(library.locator('.empty')).toBeVisible();
+});
+
+/** Read the recorder's IndexedDB from an extension page. */
+async function readStore(page: Page) {
+  return page.evaluate(
+    () =>
+      new Promise<{ sessions: { id: string; chunks: number; size: number; durationMs: number }[]; chunks: number; recordings: number }>((resolve, reject) => {
+        const req = indexedDB.open('stylus-recordings');
+        req.onerror = () => reject(req.error);
+        req.onsuccess = () => {
+          const db = req.result;
+          const t = db.transaction(['sessions', 'chunks', 'recordings'], 'readonly');
+          const s = t.objectStore('sessions').getAll();
+          const c = t.objectStore('chunks').count();
+          const r = t.objectStore('recordings').count();
+          t.oncomplete = () => {
+            db.close();
+            resolve({ sessions: s.result, chunks: c.result, recordings: r.result });
+          };
+        };
+      }),
+  );
+}
+
+test.describe('crash safety', () => {
+  test('chunks are written to disk while recording, and cleaned up after stop', async ({ stylus, page, context }) => {
+    await stylus.open();
+    await paintCard(page);
+    await stylus.edit();
+    await stylus.pick('#second');
+    await stylus.ui('.bb-actions button').filter({ hasText: 'Record' }).click();
+    await waitForRecording(stylus);
+    await page.mouse.move(400, 300, { steps: 30 });
+    await page.waitForTimeout(2500);
+
+    // Opening the library mid-recording must not "recover" the live session.
+    const peek = await context.newPage();
+    await peek.goto(`chrome-extension://${(await stylus.sw.evaluate(() => chrome.runtime.id))}/recordings.html`);
+    await expect(peek.locator('.empty')).toBeVisible();
+    // Chunks keep landing on disk while the recording runs (about one a second).
+    await expect.poll(async () => (await readStore(peek)).sessions[0]?.chunks ?? 0, { timeout: 10000 }).toBeGreaterThanOrEqual(2);
+    const live = await readStore(peek);
+    expect(live.sessions).toHaveLength(1);
+    expect(live.sessions[0].size).toBeGreaterThan(0);
+    expect(live.chunks).toBe(live.sessions[0].chunks);
+    await peek.close();
+
+    await page.bringToFront();
+    const library = await stopAndOpenLibrary(context, () => stylus.ui('.rec-btn.stop').click());
+    expect(await readStore(library)).toMatchObject({ sessions: [], chunks: 0, recordings: 1 });
+  });
+
+  test('a recording survives the recorder dying mid-way', async ({ stylus, page, context, sw }) => {
+    await stylus.open();
+    await paintCard(page);
+    await stylus.edit();
+    await stylus.pick('#second');
+    await stylus.ui('.bb-actions button').filter({ hasText: 'Record' }).click();
+    await waitForRecording(stylus);
+    // Keep the page moving until a few chunks are on disk, then simulate a crash: the recorder
+    // document disappears without stopping cleanly.
+    const peek = await context.newPage();
+    await peek.goto(`chrome-extension://${await sw.evaluate(() => chrome.runtime.id)}/recordings.html`);
+    await page.bringToFront();
+    await expect
+      .poll(
+        async () => {
+          await page.mouse.move(200 + Math.random() * 400, 300, { steps: 10 });
+          return (await readStore(peek)).sessions[0]?.chunks ?? 0;
+        },
+        { timeout: 20000 },
+      )
+      .toBeGreaterThanOrEqual(3);
+    await peek.close();
+    await sw.evaluate(() => chrome.offscreen.closeDocument());
+
+    const library = await stopAndOpenLibrary(context, () => stylus.ui('.rec-btn.stop').click());
+    await expect(library.locator('.tag')).toHaveText('Recovered');
+    await expect(library.locator('.item-title')).toHaveText(/^Recovered · /);
+    const v = await inspectVideo(library);
+    expect(v.duration).toBeGreaterThan(1);
+    expect(v.center[0]).toBeGreaterThan(170); // the card's red, so real frames were kept
+    expect(await readStore(library)).toMatchObject({ sessions: [], chunks: 0, recordings: 1 });
+    await expect(stylus.ui('.toolbar')).toBeVisible(); // the tab returns to editing
+  });
+
+  test('a session with no video yet is dropped, not listed as a broken recording', async ({ stylus, context, sw }) => {
+    await stylus.open();
+    await stylus.edit();
+    // A crash right after starting leaves only the file header on disk.
+    const lib = await context.newPage();
+    await lib.goto(`chrome-extension://${await sw.evaluate(() => chrome.runtime.id)}/offscreen.html`);
+    await lib.evaluate(
+      () =>
+        new Promise<void>((resolve) => {
+          const req = indexedDB.open('stylus-recordings', 2);
+          req.onupgradeneeded = () => {
+            const db = req.result;
+            db.createObjectStore('recordings', { keyPath: 'id' });
+            db.createObjectStore('sessions', { keyPath: 'id' });
+            db.createObjectStore('chunks', { keyPath: ['session', 'seq'] });
+          };
+          req.onsuccess = () => {
+            const t = req.result.transaction(['sessions', 'chunks'], 'readwrite');
+            t.objectStore('sessions').put({ id: 'rec_header_only', title: 'x', url: '', createdAt: 1, durationMs: 0, width: 0, height: 0, mime: 'video/mp4', chunks: 1, size: 10 });
+            t.objectStore('chunks').put({ session: 'rec_header_only', seq: 0, data: new Blob(['0123456789']) });
+            t.oncomplete = () => resolve();
+          };
+        }),
+    );
+    await lib.goto(lib.url().replace('offscreen.html', 'recordings.html'));
+    await expect(lib.locator('.empty')).toBeVisible();
+    expect(await readStore(lib)).toMatchObject({ sessions: [], chunks: 0, recordings: 0 });
+  });
+
+  test('discarding removes the chunks already written', async ({ stylus, page, context }) => {
+    await stylus.open();
+    await stylus.edit();
+    await stylus.pick('#second');
+    await stylus.ui('.bb-actions button').filter({ hasText: 'Record' }).click();
+    await waitForRecording(stylus);
+    await page.mouse.move(400, 300, { steps: 30 });
+    await page.waitForTimeout(2200);
+    await stylus.ui('.rec-btn[title="Discard recording"]').click();
+    await expect(stylus.ui('.toolbar')).toBeVisible();
+    const peek = await context.newPage();
+    await peek.goto(`chrome-extension://${(await stylus.sw.evaluate(() => chrome.runtime.id))}/recordings.html`);
+    await expect.poll(async () => readStore(peek)).toMatchObject({ sessions: [], chunks: 0, recordings: 0 });
+  });
 });

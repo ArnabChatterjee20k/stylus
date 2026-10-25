@@ -132,7 +132,18 @@ test.describe('tools', () => {
     await page.keyboard.press('Enter');
     await expect(page.locator('#title')).toHaveText('New title');
     await expect(page.locator('#title')).not.toHaveAttribute('contenteditable');
+    await expect(stylus.crumb()).toHaveText('h2#title'); // ids win over text in labels
     await stylus.persisted((r) => !!r?.ops.some((o) => o.kind === 'text'));
+  });
+
+  test('breadcrumb label follows a text edit', async ({ stylus, page }) => {
+    await stylus.open();
+    await stylus.edit();
+    await page.dblclick('#second h2');
+    await page.keyboard.press('Meta+a');
+    await page.keyboard.type('Renamed');
+    await page.keyboard.press('Enter');
+    await expect(stylus.crumb()).toHaveText('h2 “Renamed”');
   });
 
   test('Esc cancels a text edit without recording a change', async ({ stylus, page }) => {

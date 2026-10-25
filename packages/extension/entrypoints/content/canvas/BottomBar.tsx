@@ -1,4 +1,4 @@
-import { scope, select, selection } from '../engine/store';
+import { ops, scope, select, selection } from '../engine/store';
 import { isPickable } from '../lib/dom';
 import { labelFor } from '../lib/selector';
 import { hideSelection, isolateSelection, selectSimilar, startTextEdit } from './actions';
@@ -15,6 +15,8 @@ const BREAKPOINTS: [string, string][] = [
 export function BottomBar() {
   const sel = selection.value;
   const el = sel?.els[0];
+  // Re-render after every edit: labels include element text, which a text edit changes.
+  void ops.value;
   const crumbs: Element[] = [];
   for (let n: Element | null = el ?? null; n && n !== document.documentElement; n = n.parentElement) crumbs.unshift(n);
   const shown = crumbs.slice(-6);

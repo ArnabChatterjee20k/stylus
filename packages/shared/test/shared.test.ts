@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { compileCss, History, parseRule, setStyle, setText, toggleHide, togglePreset, type EditOp } from '../src';
+import { compileCss, describeOp, History, parseRule, setMove, setStyle, setText, toggleHide, togglePreset, type EditOp } from '../src';
 
 describe('setStyle', () => {
   it('merges props for the same selector into one op', () => {
@@ -78,5 +78,17 @@ describe('parseRule', () => {
     });
     expect(rule.ops).toHaveLength(1);
     expect(rule.ops[0]).toMatchObject({ kind: 'hide', mode: 'display', by: 'user' });
+  });
+});
+
+describe('setMove', () => {
+  it('keeps one move op per element and does not emit CSS', () => {
+    let ops = setMove([], '#a', 2);
+    const id = ops[0].id;
+    ops = setMove(ops, '#a', 0);
+    expect(ops).toHaveLength(1);
+    expect(ops[0]).toMatchObject({ id, kind: 'move', index: 0 });
+    expect(compileCss(ops)).toBe('');
+    expect(describeOp(ops[0])).toBe('Moved #a → position 1');
   });
 });

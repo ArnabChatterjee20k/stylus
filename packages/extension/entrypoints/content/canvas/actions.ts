@@ -1,4 +1,4 @@
-import { opId, setStyle, setText, toggleHide, type EditOp } from '@stylus/shared';
+import { opId, setStyle, setText, stylesFor, toggleHide, type EditOp } from '@stylus/shared';
 import { rememberOriginal } from '../engine/style-engine';
 import { commit, ops, scope, select, selection } from '../engine/store';
 import { isPickable, sanitizeHtml } from '../lib/dom';
@@ -14,6 +14,43 @@ export function editStyle(prop: string, value: string) {
   const before = getComputedStyle(el).getPropertyValue(prop);
   const s = scope.value.media || scope.value.state ? scope.value : undefined;
   commit(setStyle(ops.value, sel.selector, prop, value, { before, scope: s, fingerprint: fingerprint(el) }), `${sel.selector}|${prop}`);
+}
+
+/** Set several properties as one undo step (`key` coalesces repeated calls, e.g. during a drag). */
+export function editStyles(props: Record<string, string>, key: string) {
+  const sel = selection.value;
+  const el = primary();
+  if (!sel || !el) return;
+  const cs = getComputedStyle(el);
+  const s = scope.value.media || scope.value.state ? scope.value : undefined;
+  let next = ops.value;
+  for (const [prop, value] of Object.entries(props)) {
+    next = setStyle(next, sel.selector, prop, value, { before: cs.getPropertyValue(prop), scope: s, fingerprint: fingerprint(el) });
+  }
+  commit(next, `${sel.selector}|${key}`);
+}
+
+/** Move the selection by (dx, dy) pixels with the CSS `translate` property, which doesn't disturb layout. */
+export function nudge(dx: number, dy: number) {
+  const sel = selection.value;
+  const el = primary();
+  if (!sel || !el) return;
+  const s = scope.value.media || scope.value.state ? scope.value : undefined;
+  const set = stylesFor(ops.value, sel.selector, s);
+  const cs = getComputedStyle(el);
+  if (cs.display === 'inline') {
+    // `translate` doesn't apply to inline boxes; offset them with relative positioning instead.
+    const left = Number.parseFloat(set.left ?? cs.left) || 0;
+    const top = Number.parseFloat(set.top ?? cs.top) || 0;
+    const props: Record<string, string> = { left: `${left + dx}px`, top: `${top + dy}px` };
+    if (cs.position === 'static') props.position = 'relative';
+    editStyles(props, 'nudge');
+    return;
+  }
+  const current = set.translate ?? cs.translate;
+  const [x = 0, y = 0] = current === 'none' ? [] : current.split(/\s+/).map((v) => Number.parseFloat(v) || 0);
+  const next = x + dx === 0 && y + dy === 0 ? '' : `${x + dx}px ${y + dy}px`;
+  editStyles({ translate: next }, 'nudge');
 }
 
 export function hideSelection() {

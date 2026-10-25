@@ -52,6 +52,13 @@ export const EditOpSchema = z.discriminatedUnion('kind', [
     html: z.boolean().optional(),
     before: z.string().optional(),
   }),
+  z.object({
+    ...base,
+    kind: z.literal('move'),
+    selector: z.string(),
+    /** Position among the element's siblings (element children of its parent, excluding itself). */
+    index: z.number().int().min(0),
+  }),
   z.object({ ...base, kind: z.literal('rawCss'), css: z.string() }),
   z.object({ ...base, kind: z.literal('preset'), name: z.enum(PRESETS) }),
 ]);
@@ -85,4 +92,4 @@ let counter = 0;
 export const opId = () => `${Date.now().toString(36)}-${(counter++).toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
 
 /** Ops that compile to CSS vs ones that mutate the DOM. */
-export const isDomOp = (op: EditOp): op is OpOf<'text'> => op.kind === 'text';
+export const isDomOp = (op: EditOp): op is OpOf<'text' | 'move'> => op.kind === 'text' || op.kind === 'move';

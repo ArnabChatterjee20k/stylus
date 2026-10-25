@@ -24,6 +24,8 @@ export const canUndo = signal(false);
 export const canRedo = signal(false);
 /** The shadow host of our UI, so pickers can ignore it. */
 export const uiHost = signal<HTMLElement | null>(null);
+/** Alt is held: show distances between the selection and the hovered element. */
+export const measuring = signal(false);
 
 const history = new History<EditOp[]>([]);
 /** Our own writes still waiting for their storage.onChanged echo; those echoes must not be mistaken for external edits. */

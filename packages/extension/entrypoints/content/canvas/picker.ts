@@ -1,14 +1,18 @@
-import { hovered, redo, select, selection, tool, uiHost, undo, togglePanel } from '../engine/store';
+import { hovered, measuring, redo, select, selection, tool, uiHost, undo, togglePanel } from '../engine/store';
 import { isPickable } from '../lib/dom';
 import {
   finishTextEdit,
   hideElement,
   hideSelection,
   isEditingText,
+  nudge,
   selectRelative,
   selectSimilar,
   startTextEdit,
 } from './actions';
+import { cancelReorder, consumeDragClick, reorderDown, reorderMove, reorderUp } from './reorder';
+
+const TEXT_ENTRY = 'input:not([type=checkbox], [type=radio], [type=color], [type=range], [type=button]), textarea, select, [contenteditable]';
 
 const fromUi = (e: Event) => !!uiHost.value && e.composedPath().includes(uiHost.value);
 
@@ -24,6 +28,8 @@ const inEditedText = (e: Event) => {
 };
 
 function onMove(e: PointerEvent) {
+  measuring.value = e.altKey;
+  if (reorderMove(e)) return;
   if (fromUi(e) || inEditedText(e)) {
     if (fromUi(e)) hovered.value = null;
     return;
@@ -39,9 +45,28 @@ function block(e: Event) {
   e.stopImmediatePropagation();
 }
 
+function onDown(e: PointerEvent) {
+  if (fromUi(e) || inEditedText(e)) return;
+  block(e);
+  // Blocking the page's mousedown also stops focus from leaving our panels; release it so shortcuts work.
+  (uiHost.value?.shadowRoot?.activeElement as HTMLElement | null)?.blur();
+  const t = targetOf(e);
+  if (t && !isEditingText()) reorderDown(e, t);
+}
+
+function onUp(e: PointerEvent) {
+  if (reorderUp()) {
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    return;
+  }
+  block(e);
+}
+
 function onClick(e: MouseEvent) {
   if (fromUi(e) || inEditedText(e)) return;
   block(e);
+  if (consumeDragClick()) return;
   if (isEditingText()) finishTextEdit();
   const t = targetOf(e);
   if (!isPickable(t)) return;
@@ -71,8 +96,8 @@ function onDblClick(e: MouseEvent) {
 }
 
 function onKey(e: KeyboardEvent) {
-  // Typing in our own inputs keeps native behavior; other focus inside the UI still gets shortcuts.
-  if (fromUi(e) && targetOf(e)?.closest('input, textarea, select, [contenteditable]')) return;
+  // Typing in our own text fields keeps native behavior; other focus inside the UI still gets shortcuts.
+  if (fromUi(e) && targetOf(e)?.closest(TEXT_ENTRY)) return;
   if (isEditingText()) {
     if (e.key === 'Escape') finishTextEdit(true);
     else if (e.key === 'Enter' && !e.shiftKey) {
@@ -92,8 +117,25 @@ function onKey(e: KeyboardEvent) {
       redo();
       return true;
     }
+    if (e.key === 'Alt') {
+      measuring.value = true;
+      return false;
+    }
     if (mod || e.altKey) return false;
+    const step = e.shiftKey ? 10 : 1;
     switch (e.key) {
+      case 'ArrowUp':
+        nudge(0, -step);
+        return true;
+      case 'ArrowDown':
+        nudge(0, step);
+        return true;
+      case 'ArrowLeft':
+        nudge(-step, 0);
+        return true;
+      case 'ArrowRight':
+        nudge(step, 0);
+        return true;
       case 'Escape':
         selectRelative('parent');
         return true;
@@ -135,13 +177,26 @@ function onKey(e: KeyboardEvent) {
   }
 }
 
-const BLOCKED = ['pointerdown', 'mousedown', 'mouseup', 'pointerup', 'auxclick', 'contextmenu', 'submit', 'dragstart'] as const;
+function onKeyUp(e: KeyboardEvent) {
+  if (e.key === 'Alt') measuring.value = false;
+}
+
+const onBlur = () => {
+  measuring.value = false;
+  cancelReorder();
+};
+
+const BLOCKED = ['mousedown', 'mouseup', 'auxclick', 'contextmenu', 'submit', 'dragstart'] as const;
 
 export function startPicker() {
   window.addEventListener('pointermove', onMove, true);
   window.addEventListener('click', onClick, true);
   window.addEventListener('dblclick', onDblClick, true);
   window.addEventListener('keydown', onKey, true);
+  window.addEventListener('keyup', onKeyUp, true);
+  window.addEventListener('pointerdown', onDown, true);
+  window.addEventListener('pointerup', onUp, true);
+  window.addEventListener('blur', onBlur);
   for (const type of BLOCKED) window.addEventListener(type, block, true);
   document.documentElement.classList.add('__stylus-editing');
 }
@@ -151,7 +206,12 @@ export function stopPicker() {
   window.removeEventListener('click', onClick, true);
   window.removeEventListener('dblclick', onDblClick, true);
   window.removeEventListener('keydown', onKey, true);
+  window.removeEventListener('keyup', onKeyUp, true);
+  window.removeEventListener('pointerdown', onDown, true);
+  window.removeEventListener('pointerup', onUp, true);
+  window.removeEventListener('blur', onBlur);
   for (const type of BLOCKED) window.removeEventListener(type, block, true);
+  onBlur();
   document.documentElement.classList.remove('__stylus-editing');
   if (isEditingText()) finishTextEdit();
   hovered.value = null;

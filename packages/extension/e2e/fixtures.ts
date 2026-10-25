@@ -3,11 +3,21 @@ import { test as base, chromium, expect, type BrowserContext, type Locator, type
 import { createServer, type Server } from 'node:http';
 import { mkdtempSync, readFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { createHash } from 'node:crypto';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const extPath = join(here, '../.output/chrome-mv3');
+
+/**
+ * Chrome's ID for an unpacked extension: the first 32 hex chars of sha256(path), mapped 0-f → a-p.
+ * Needed up front for --allowlisted-extension-id, which lets chrome.tabCapture run without a real
+ * click on the toolbar icon (Playwright can't reach the browser toolbar).
+ */
+export const EXTENSION_ID = [...createHash('sha256').update(resolve(extPath)).digest('hex').slice(0, 32)]
+  .map((c) => String.fromCharCode(97 + Number.parseInt(c, 16)))
+  .join('');
 
 function serve(): Promise<{ server: Server; url: string }> {
   return new Promise((resolve) => {
@@ -57,7 +67,7 @@ export const test = base.extend<Fixtures, WorkerFixtures>({
     const context = await chromium.launchPersistentContext(mkdtempSync(join(tmpdir(), 'stylus-e2e-')), {
       executablePath: process.env.CHROME || undefined,
       headless: true,
-      args: ['--headless=new', `--disable-extensions-except=${extPath}`, `--load-extension=${extPath}`],
+      args: ['--headless=new', `--disable-extensions-except=${extPath}`, `--load-extension=${extPath}`, `--allowlisted-extension-id=${EXTENSION_ID}`],
       viewport: { width: 1280, height: 800 },
     });
     await use(context);

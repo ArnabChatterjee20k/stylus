@@ -81,7 +81,12 @@ export default defineBackground(() => {
   }
 
   async function control(req: RecControlRequest): Promise<RecResult> {
-    if (!(await chrome.offscreen.hasDocument())) return { ok: false, error: 'Not recording.' };
+    if (!(await chrome.offscreen.hasDocument())) {
+      // The recorder went away mid-recording (crash, browser closing it). Its chunks are on disk;
+      // the library rebuilds them into a recording when it opens.
+      if (req.type === 'stylus:rec:stop') await browser.tabs.create({ url: browser.runtime.getURL(RECORDINGS_PAGE as '/recordings.html') });
+      return { ok: false, error: 'Not recording.' };
+    }
     const type = req.type.replace('stylus:rec:', '') as OffscreenControl['type'];
     const result = await toOffscreen({ type });
     if (type === 'stop' && result.ok && result.id) {
@@ -92,11 +97,16 @@ export default defineBackground(() => {
   }
 
   browser.runtime.onMessage.addListener((msg: unknown, sender, sendResponse) => {
-    const m = msg as RecStartRequest | RecControlRequest | { type: 'stylus:rec:library' };
+    const m = msg as RecStartRequest | RecControlRequest | { type: 'stylus:rec:library' } | { type: 'stylus:rec:active' };
     if (!m?.type?.startsWith('stylus:rec:')) return;
     if (m.type === 'stylus:rec:library') {
       void browser.tabs.create({ url: browser.runtime.getURL(RECORDINGS_PAGE as '/recordings.html') });
       return;
+    }
+    if (m.type === 'stylus:rec:active') {
+      // The library asks before recovering interrupted sessions, so it never touches a live one.
+      chrome.offscreen.hasDocument().then((active) => sendResponse({ active }));
+      return true;
     }
     const work = m.type === 'stylus:rec:start' ? startRecording(m, sender.tab!) : control(m);
     work.then(sendResponse, (e: unknown) => sendResponse({ ok: false, error: e instanceof Error ? e.message : String(e) }));

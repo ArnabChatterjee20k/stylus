@@ -1,6 +1,7 @@
 import { render } from 'preact';
 import { useEffect, useMemo, useState } from 'preact/hooks';
-import { deleteRecording, extensionFor, listRecordings, renameRecording, type Recording } from '../../lib/recordings-db';
+import { browser } from 'wxt/browser';
+import { deleteRecording, extensionFor, listRecordings, recoverInterrupted, renameRecording, type Recording } from '../../lib/recordings-db';
 import './style.css';
 
 const formatDuration = (ms: number) => {
@@ -18,7 +19,12 @@ function App() {
 
   const reload = async () => setItems(await listRecordings());
   useEffect(() => {
-    void reload();
+    void (async () => {
+      // Rebuild recordings left behind by a crash or a closed recorder, unless one is still running.
+      const { active } = ((await browser.runtime.sendMessage({ type: 'stylus:rec:active' }).catch(() => null)) ?? { active: true }) as { active: boolean };
+      if (!active) await recoverInterrupted().catch(() => []);
+      await reload();
+    })();
     const onHash = () => setSelectedId(location.hash.slice(1));
     addEventListener('hashchange', onHash);
     return () => removeEventListener('hashchange', onHash);
@@ -53,6 +59,7 @@ function App() {
                   {r.thumbnail ? <img class="thumb" src={r.thumbnail} alt="" /> : <span class="thumb blank" />}
                   <span class="item-text">
                     <span class="item-title">{r.title}</span>
+                    {r.recovered && <span class="tag">Recovered</span>}
                     <span class="item-meta">
                       {formatDuration(r.durationMs)} · {formatDate(r.createdAt)}
                     </span>

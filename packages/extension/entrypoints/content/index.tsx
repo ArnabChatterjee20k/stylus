@@ -14,9 +14,19 @@ export default defineContentScript({
   cssInjectionMode: 'ui',
 
   async main(ctx) {
-    // View mode: apply saved edits as early as possible.
-    await loadRule();
-    startEngine();
+    // View mode: apply saved edits before first paint. Reading storage is async, so hold painting
+    // until the rule is in (a few ms), with a safety timeout so a slow read never blanks the page.
+    const guard = document.createElement('style');
+    guard.textContent = 'html { visibility: hidden !important; }';
+    document.documentElement.appendChild(guard);
+    const release = setTimeout(() => guard.remove(), 300);
+    try {
+      await loadRule();
+      startEngine();
+    } finally {
+      clearTimeout(release);
+      guard.remove();
+    }
 
     let ui: ShadowRootContentScriptUi<void> | null = null;
 

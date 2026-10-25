@@ -57,3 +57,9 @@ button, input { font: inherit; color: inherit; }
   .sidebar { border-right: 0; border-bottom: 1px solid var(--line); }
   .viewer { padding: 16px; }
 }
+
+.brand .storage-link { margin-left: auto; font-size: 12px; font-weight: 500; color: var(--text-2); }
+.keep { display: inline-flex; align-items: center; gap: 6px; color: var(--text-2); font-size: 13px; }
+.keep input { accent-color: var(--accent); }
+.status { padding: 8px 12px; border-radius: 8px; background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--text); font-weight: 500; }
+.button:disabled { opacity: 0.6; cursor: default; }

@@ -1,5 +1,5 @@
 import type { BrowserContext, Page } from '@playwright/test';
-import { expect, test, type Stylus } from '../fixtures';
+import { downloadCount, expect, lastDownload, test, type Stylus } from '../fixtures';
 
 /**
  * The recorder, end to end: real chrome.tabCapture → offscreen MediaRecorder → IndexedDB → library
@@ -103,7 +103,16 @@ test('records the selected element with a visible cursor, clicks and keys', asyn
   expect(b).toBeLessThan(110);
 
   await expect(library.locator('.title')).toHaveValue(/article#second/);
-  await expect(library.locator('a.button.primary')).toHaveAttribute('download', /\.(mp4|webm)$/);
+
+  // Download saves a real video file and frees the space in Stylus.
+  const before = await downloadCount(library);
+  await library.locator('.button.primary', { hasText: /Download (MP4|WEBM)/ }).click();
+  await expect.poll(() => downloadCount(library)).toBe(before + 1);
+  const file = await lastDownload(library);
+  expect(file.size).toBeGreaterThan(1000);
+  expect(file.mime).toMatch(/^video\//);
+  await expect(library.locator('.status')).toHaveText('Saved to Downloads and removed from Stylus.');
+  await expect(library.locator('.empty')).toBeVisible();
 });
 
 test('records the whole tab and stops from the toolbar icon / shortcut', async ({ stylus, page, context }) => {

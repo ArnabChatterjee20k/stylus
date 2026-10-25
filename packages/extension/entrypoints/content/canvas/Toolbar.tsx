@@ -3,6 +3,7 @@ import { useState } from 'preact/hooks';
 import { selection } from '../engine/store';
 import { labelFor } from '../lib/selector';
 import { Icon, type IconName } from './icons';
+import { browser } from 'wxt/browser';
 import { openCaptures, takeScreenshot } from './capture';
 import { openLibrary, startRecording } from './recorder';
 
@@ -93,6 +94,9 @@ function RecordMenu() {
           <button role="menuitem" onClick={pick(openLibrary)}>
             Open recordings
           </button>
+          <button role="menuitem" onClick={pick(openStorage)}>
+            Manage storage
+          </button>
         </div>
       )}
     </div>
@@ -125,8 +129,13 @@ function ShotMenu() {
           <button role="menuitem" onClick={pick(openCaptures)}>
             Open screenshots
           </button>
+          <button role="menuitem" onClick={pick(openStorage)}>
+            Manage storage
+          </button>
         </div>
       )}
     </div>
   );
 }
+
+const openStorage = () => browser.runtime.sendMessage({ type: 'stylus:storage' }).catch(() => {});

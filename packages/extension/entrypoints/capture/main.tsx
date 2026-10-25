@@ -1,6 +1,7 @@
 import { render } from 'preact';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { deleteCapture, listCaptures, updateCapture, type Capture } from '../../lib/captures-db';
+import { keepAfterDownload, safeName, saveToDownloads, setKeepAfterDownload } from '../../lib/downloads';
 import { renderShot } from '../../lib/shot-render';
 import { ASPECTS, DEFAULT_SETTINGS, FRAMES, GRADIENTS, SOLIDS, type Background, type Shadow, type ShotSettings } from '../../lib/shot-settings';
 import './style.css';
@@ -16,7 +17,7 @@ function lastSettings(): ShotSettings {
 }
 
 const sameBg = (a: Background, b: Background) => JSON.stringify(a) === JSON.stringify(b);
-const fileName = (c: Capture, scale: number) => `${c.title.replace(/[^\w\- ]+/g, '').trim() || 'screenshot'}${scale > 1 ? `@${scale}x` : ''}.png`;
+const fileName = (c: Capture, scale: number) => `${safeName(c.title, 'screenshot')}${scale > 1 ? `@${scale}x` : ''}.png`;
 
 /** CSS preview of a gradient swatch, matching what the renderer paints. */
 function swatchStyle(id: string) {
@@ -34,6 +35,8 @@ function App() {
   const [exportScale, setExportScale] = useState(2);
   const [status, setStatus] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [keep, setKeep] = useState(keepAfterDownload);
+  const [saving, setSaving] = useState(false);
   const [bitmap, setBitmap] = useState<ImageBitmap | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -98,14 +101,19 @@ function App() {
     setTimeout(() => setStatus((s) => (s === text ? '' : s)), 2000);
   };
 
+  // Save to Downloads, then free the space here once the file is safely written.
   const download = async () => {
-    const url = URL.createObjectURL(await exportBlob());
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = fileName(selected!, exportScale);
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 10_000);
-    flash('Downloaded');
+    const c = selected!;
+    setSaving(true);
+    const result = await saveToDownloads(await exportBlob(), fileName(c, exportScale));
+    setSaving(false);
+    if (result !== 'complete') return flash('Download didn’t finish. The screenshot is still here.');
+    if (keep) return flash('Saved to Downloads');
+    await deleteCapture(c.id);
+    history.replaceState(null, '', '#');
+    setSelectedId('');
+    await reload();
+    flash('Saved to Downloads and removed from Stylus');
   };
 
   const copy = async () => {
@@ -126,10 +134,16 @@ function App() {
 
   return (
     <div class="app">
+      {status && (
+        <div class="status toast" role="status">
+          {status}
+        </div>
+      )}
       <aside class="list">
         <header class="brand">
           <img src="/icon/logo.svg" alt="" width={22} height={22} />
           <span>Screenshots</span>
+          <a class="storage-link" href="/options.html">Storage</a>
         </header>
         {items.length === 0 ? (
           <p class="empty">No screenshots yet. Open Stylus on a page, click the camera, and pick an element or the visible tab.</p>
@@ -154,9 +168,6 @@ function App() {
               <span class="title" title={selected.title}>
                 {selected.title}
               </span>
-              <span class="status" role="status">
-                {status}
-              </span>
               <div class="seg" role="group" aria-label="Export size">
                 {[1, 2].map((n) => (
                   <button key={n} class={exportScale === n ? 'on' : ''} onClick={() => setExportScale(n)}>
@@ -167,8 +178,8 @@ function App() {
               <button class="btn" onClick={copy} disabled={!bitmap}>
                 Copy
               </button>
-              <button class="btn primary" onClick={download} disabled={!bitmap}>
-                Download PNG
+              <button class="btn primary" onClick={download} disabled={!bitmap || saving}>
+                {saving ? 'Saving…' : 'Download PNG'}
               </button>
             </div>
             <div class="canvas-wrap">
@@ -279,6 +290,17 @@ function App() {
               />
             </Section>
 
+            <label class="toggle keep" title="Otherwise the screenshot is removed from Stylus once it is in your Downloads folder">
+              <input
+                type="checkbox"
+                checked={keep}
+                onChange={(e) => {
+                  setKeep(e.currentTarget.checked);
+                  setKeepAfterDownload(e.currentTarget.checked);
+                }}
+              />
+              Keep a copy in Stylus after downloading
+            </label>
             <div class="footer">
               <button class="link" onClick={() => setSettings(DEFAULT_SETTINGS)}>
                 Reset style

@@ -1,0 +1,16 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Hostile fixture</title>
+    <style>
+      * { font-size: 40px !important; color: lime !important; box-sizing: content-box !important; }
+      button { all: unset !important; }
+      .overlay { position: fixed; inset: 0; z-index: 2147483647; background: rgba(255, 0, 0, 0.1); }
+    </style>
+  </head>
+  <body>
+    <p id="content">Content under a full-screen max z-index overlay</p>
+    <div class="overlay"></div>
+  </body>
+</html>

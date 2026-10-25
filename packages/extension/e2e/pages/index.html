@@ -1,0 +1,37 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Stylus fixture</title>
+    <style>
+      body { font-family: Georgia, serif; margin: 0; background: #ffffff; color: #222222; }
+      .header { position: sticky; top: 0; background: #1a73e8; color: #fff; padding: 12px 24px; }
+      .cookie-banner { position: fixed; bottom: 0; left: 0; right: 0; background: #333; color: #fff; padding: 16px; }
+      main { display: flex; gap: 16px; padding: 80px 320px 80px 300px; /* keep content clear of the floating panels */ }
+      .card { padding: 16px; border: 1px solid #ddd; border-radius: 8px; flex: 1; color: #222222; }
+      .card:hover { outline: 1px solid transparent; }
+      aside { width: 120px; background: #f3f3f3; padding: 12px; }
+      .row { display: flex; gap: 8px; }
+    </style>
+  </head>
+  <body>
+    <nav class="header">Fixture header</nav>
+    <main>
+      <article class="card" id="first">
+        <h2 id="title">Hello world</h2>
+        <p id="rich">Some <b>bold</b> words</p>
+        <a id="link" href="/elsewhere">A link</a>
+        <button id="btn" onclick="window.clicked = true">Press</button>
+      </article>
+      <article class="card" id="second"><h2>Second</h2><p>Second card.</p></article>
+      <article class="card" id="third"><h2>Third</h2><p>Third card.</p></article>
+      <aside class="sidebar">Sidebar ads</aside>
+    </main>
+    <div class="cookie-banner">We use cookies</div>
+    <script>
+      window.clicked = false;
+      window.keys = [];
+      document.addEventListener('keydown', (e) => window.keys.push(e.key));
+    </script>
+  </body>
+</html>

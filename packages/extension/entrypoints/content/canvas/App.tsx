@@ -38,7 +38,8 @@ export function App({ onExit }: { onExit: () => void }) {
   const dark = hasPreset(ops.value, 'dark');
   useEffect(() => {
     const host = uiHost.value;
-    if (host) host.style.filter = dark ? 'invert(1) hue-rotate(180deg)' : '';
+    // Set via an attribute + :host rule: inline styles on the host lose to WXT's `all: initial !important` reset.
+    host?.toggleAttribute('data-dark', dark);
   }, [dark]);
 
   // Force :hover/:focus/:active styling on the selection while that state scope is chosen.

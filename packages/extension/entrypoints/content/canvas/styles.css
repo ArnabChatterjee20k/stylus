@@ -23,6 +23,9 @@
   --mono: ui-monospace, 'SF Mono', Menlo, monospace;
 }
 
+/* The Dark preset inverts <html>, which includes us; invert back so the panels keep their colors. */
+:host([data-dark]) { filter: invert(1) hue-rotate(180deg) !important; }
+
 * { box-sizing: border-box; }
 
 .root {

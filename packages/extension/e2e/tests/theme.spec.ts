@@ -38,7 +38,10 @@ test('Dark keeps images un-inverted and counter-inverts the Stylus UI', async ({
   await page.evaluate(() => document.body.insertAdjacentHTML('beforeend', '<img id="pic" src="data:image/gif;base64,R0lGODlhAQABAAAAACw=">'));
   await stylus.ui('.preset').filter({ hasText: 'Dark' }).click();
   expect(await stylus.style('#pic', 'filter')).toContain('invert(1)');
-  expect(await page.$eval('stylus-canvas', (h) => (h as HTMLElement).style.filter)).toContain('invert(1)');
+  // The computed style, not the attribute: WXT's `:host { all: initial !important }` beats inline styles.
+  await expect.poll(() => stylus.style('stylus-canvas', 'filter')).toContain('invert(1)');
+  await stylus.ui('.preset').filter({ hasText: 'Dark' }).click();
+  await expect.poll(() => stylus.style('stylus-canvas', 'filter')).toBe('none');
 });
 
 test('Reading preset improves line length and spacing', async ({ stylus }) => {

@@ -1,6 +1,6 @@
 import { effect } from '@preact/signals';
 import { compileCss, type OpOf } from '@stylus/shared';
-import { rule } from './store';
+import { liveOps } from './store';
 
 const STYLE_ID = '__stylus-style';
 let styleEl: HTMLStyleElement | null = null;
@@ -24,8 +24,7 @@ function ensureStyle(): HTMLStyleElement {
 }
 
 function textOps(): OpOf<'text'>[] {
-  if (!rule.value.enabled) return [];
-  return rule.value.ops.filter((op): op is OpOf<'text'> => op.kind === 'text' && !op.disabled);
+  return liveOps.value.filter((op): op is OpOf<'text'> => op.kind === 'text' && !op.disabled);
 }
 
 function applyTextOps() {
@@ -78,8 +77,7 @@ export function startEngine() {
   });
 
   effect(() => {
-    const r = rule.value;
-    ensureStyle().textContent = r.enabled ? compileCss(r.ops) : '';
+    ensureStyle().textContent = compileCss(liveOps.value);
     const hasText = textOps().length > 0 || originals.size > 0;
     if (document.body) applyTextOps();
     observer.disconnect();

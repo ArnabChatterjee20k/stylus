@@ -15,6 +15,27 @@ export default defineBackground(() => {
 
   browser.action.onClicked.addListener((tab) => toggle(tab.id));
 
+  // Right-click menu: act on the element under the pointer without opening edit mode first.
+  const MENU = [
+    { id: 'stylus-hide', title: 'Hide this element', action: 'hide' },
+    { id: 'stylus-text', title: 'Edit this text', action: 'text' },
+    { id: 'stylus-style', title: 'Style this element…', action: 'style' },
+  ] as const;
+
+  browser.runtime.onInstalled.addListener(async () => {
+    await browser.contextMenus.removeAll();
+    browser.contextMenus.create({ id: 'stylus', title: 'Stylus', contexts: ['page', 'selection', 'link', 'image', 'video'] });
+    for (const item of MENU) {
+      browser.contextMenus.create({ id: item.id, parentId: 'stylus', title: item.title, contexts: ['page', 'selection', 'link', 'image', 'video'] });
+    }
+  });
+
+  browser.contextMenus.onClicked.addListener((info, tab) => {
+    const item = MENU.find((m) => m.id === info.menuItemId);
+    if (!item || tab?.id === undefined) return;
+    browser.tabs.sendMessage(tab.id, { type: 'stylus:context', action: item.action }, { frameId: 0 }).catch(() => {});
+  });
+
   browser.commands.onCommand.addListener(async (command, tab) => {
     if (command !== 'toggle-edit') return;
     const id = tab?.id ?? (await browser.tabs.query({ active: true, currentWindow: true }))[0]?.id;

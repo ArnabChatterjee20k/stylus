@@ -99,6 +99,20 @@ export class Stylus {
     }, url);
   }
 
+  /** Right-click an element, then trigger a Stylus context-menu action (as the menu's click handler does). */
+  async contextAction(selector: string, action: 'hide' | 'text' | 'style', page = this.page) {
+    await page.click(selector, { button: 'right' });
+    await page.keyboard.press('Escape'); // dismiss the native menu
+    const url = page.url();
+    await this.sw.evaluate(
+      async ([u, a]) => {
+        const tab = (await chrome.tabs.query({})).find((t) => t.url === u);
+        await chrome.tabs.sendMessage(tab!.id!, { type: 'stylus:context', action: a }, { frameId: 0 });
+      },
+      [url, action] as const,
+    );
+  }
+
   async edit(page = this.page) {
     await this.toggle(page);
     await page.locator('stylus-canvas .toolbar').waitFor();

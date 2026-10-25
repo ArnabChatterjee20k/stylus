@@ -63,9 +63,14 @@ function startDrag(kind: Kind, e: PointerEvent) {
   handle.setPointerCapture(e.pointerId);
   const cs = getComputedStyle(el);
   const r = el.getBoundingClientRect();
+  // Inline boxes ignore width/height and report them as `auto`: size them as inline-block, starting from what's on screen.
+  const inline = cs.display === 'inline';
+  const contentBox = cs.boxSizing !== 'border-box';
+  const extraX = contentBox ? px(cs.paddingLeft) + px(cs.paddingRight) + px(cs.borderLeftWidth) + px(cs.borderRightWidth) : 0;
+  const extraY = contentBox ? px(cs.paddingTop) + px(cs.paddingBottom) + px(cs.borderTopWidth) + px(cs.borderBottomWidth) : 0;
   const start = {
-    w: px(cs.width),
-    h: px(cs.height),
+    w: cs.width.endsWith('px') && !inline ? px(cs.width) : r.width - extraX,
+    h: cs.height.endsWith('px') && !inline ? px(cs.height) : r.height - extraY,
     radius: px(cs.borderTopLeftRadius),
     side: kind.includes('-') ? px(cs.getPropertyValue(`${kind.startsWith('pad') ? 'padding' : 'margin'}-${kind.split('-')[1]}`)) : 0,
   };
@@ -85,6 +90,7 @@ function startDrag(kind: Kind, e: PointerEvent) {
       if (kind !== 'e') props.height = `${Math.max(0, round(start.h + dy, ev))}px`;
       // A flex item sized by flex-grow/basis ignores width/height on the main axis: make it a fixed size, like Figma does.
       if (flexMain && ((flexMain === 'row' && props.width) || (flexMain === 'column' && props.height))) props.flex = '0 0 auto';
+      if (inline) props.display = 'inline-block';
       editStyles(props, `handle-${kind}`);
       text = [props.width && `W ${px(props.width)}`, props.height && `H ${px(props.height)}`].filter(Boolean).join(' × ');
     }

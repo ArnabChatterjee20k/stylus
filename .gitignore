@@ -4,5 +4,5 @@ node_modules
 dist
 *.log
 .DS_Store
-e2e/report
-e2e/results
+**/e2e/report
+**/e2e/results

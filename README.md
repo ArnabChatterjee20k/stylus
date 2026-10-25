@@ -24,6 +24,7 @@ Use it to strip distractions from a page, make a site easier on the eyes, or try
 - Turn on Focus mode to hide cookie banners, ads, popups, and sticky bars in one click.
 - Browse the page's elements as a tree in the Layers panel, search it by name or CSS selector, and show or hide items.
 - Review every edit in the Changes panel. You can switch each one off, delete it, or export the site's edits as JSON and import them elsewhere.
+- Record a video of the selected element or the whole tab, Loom style. A 3-2-1 countdown starts it; the video shows a cursor, click ripples and the keys you press, and includes the tab's sound. Recordings open in a library page where you can watch, rename, download as MP4, or delete them.
 - Undo and redo any edit. Edits sync to other open tabs of the same site.
 
 ## Install
@@ -53,6 +54,8 @@ Press Alt+Shift+S, or click the Stylus icon in the toolbar, to turn edit mode on
 | Delete | Hide the selection |
 | Cmd+Z, Cmd+Shift+Z | Undo, redo |
 | L, D | Show or hide the Layers and Design panels |
+
+To record, click the record button in the toolbar and choose the selected element or the whole tab, or use Record in the bottom bar. While recording an element, the controls sit next to it; for the whole tab they stay out of the video, so stop with Alt+Shift+S or the Stylus icon. Esc cancels during the countdown.
 
 The bar at the bottom of the screen shows the selected element's ancestors, quick actions (Similar, Isolate, Edit text, Hide), and the state and screen size that new style edits apply to.
 
@@ -91,6 +94,8 @@ packages/extension   the WXT extension
   entrypoints/content/engine       storage and state, style engine
   entrypoints/content/canvas       overlay, element picker, toolbar, bottom bar
   entrypoints/content/panels       Layers, Design, Theme, and Changes panels
+  entrypoints/offscreen            records the captured tab, cropped to the target
+  entrypoints/recordings           the recordings library page
   e2e                              Playwright tests and fixture pages
 ```
 

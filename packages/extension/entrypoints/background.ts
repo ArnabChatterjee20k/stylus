@@ -139,6 +139,10 @@ export default defineBackground(() => {
 
   browser.runtime.onMessage.addListener((msg: unknown, sender, sendResponse) => {
     const m = msg as ShotRequest | { type: 'stylus:shot:library' };
+    if ((m as { type?: string })?.type === 'stylus:storage') {
+      void browser.runtime.openOptionsPage();
+      return;
+    }
     if (m?.type === 'stylus:shot:library') {
       void browser.tabs.create({ url: browser.runtime.getURL(CAPTURE_PAGE as '/capture.html') });
       return;

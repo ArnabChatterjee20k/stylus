@@ -7,10 +7,6 @@
 
 <p align="center">
   <a href="https://developer.chrome.com/docs/extensions/develop/migrate/what-is-mv3"><img alt="Chrome Manifest V3" src="https://shieldcn.dev/badge/Chrome-Manifest_V3.svg?logo=googlechrome&variant=secondary" /></a>
-  <a href="https://www.typescriptlang.org"><img alt="TypeScript 5.9" src="https://shieldcn.dev/badge/TypeScript-5.9.svg?logo=typescript&variant=secondary" /></a>
-  <a href="https://wxt.dev"><img alt="Built with WXT" src="https://shieldcn.dev/badge/built_with-WXT.svg?logo=wxt&variant=secondary" /></a>
-  <a href="https://preactjs.com"><img alt="Preact 10" src="https://shieldcn.dev/badge/Preact-10.svg?logo=preact&variant=secondary" /></a>
-  <a href="packages/extension/e2e"><img alt="End-to-end tests with Playwright" src="https://shieldcn.dev/badge/e2e-Playwright.svg?logo=false&variant=secondary" /></a>
 </p>
 
 Stylus is a Chrome extension that lets you edit any live webpage the way you edit a frame in Figma. Click an element to select it, then hide it, rewrite its text, or change its styles in a visual panel. Stylus saves your edits per site and applies them again every time you visit.

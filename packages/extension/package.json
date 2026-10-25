@@ -13,6 +13,7 @@
     "e2e:ui": "wxt build && playwright test --ui"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.3.0",
     "@medv/finder": "^4.0.2",
     "@preact/signals": "^1.3.4",
     "@stylus/shared": "workspace:*",

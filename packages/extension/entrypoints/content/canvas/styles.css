@@ -58,6 +58,22 @@ code, .mono { font-family: var(--mono); font-size: 10.5px; }
 }
 .label[data-kind='hover'] { background: #1a1a1a; border: 1px solid var(--accent); }
 
+/* ---------- Handles ---------- */
+.handles, .handles > * { position: absolute; left: 0; top: 0; }
+.handle { display: none; pointer-events: auto; background: #fff; border: 1.5px solid var(--accent); border-radius: 2px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3); }
+.handle:hover { background: var(--accent); }
+.h-e { width: 6px; height: 18px; cursor: ew-resize; border-radius: 3px; }
+.h-s { width: 18px; height: 6px; cursor: ns-resize; border-radius: 3px; }
+.h-se { width: 9px; height: 9px; cursor: nwse-resize; }
+.h-radius { width: 9px; height: 9px; border-radius: 50%; cursor: pointer; }
+.h-pad-top, .h-pad-bottom, .h-mar-top, .h-mar-bottom { width: 14px; height: 5px; border-radius: 3px; cursor: ns-resize; }
+.h-pad-left, .h-pad-right, .h-mar-left, .h-mar-right { width: 5px; height: 14px; border-radius: 3px; cursor: ew-resize; }
+[class*='h-pad-'] { border-color: #2e9e3a; }
+[class*='h-pad-']:hover { background: #2e9e3a; }
+[class*='h-mar-'] { border-color: #d9822b; }
+[class*='h-mar-']:hover { background: #d9822b; }
+.drag-label { display: none; padding: 2px 6px; border-radius: 4px; background: var(--accent); color: #fff; font: 500 10.5px/16px var(--font); white-space: nowrap; pointer-events: none; }
+
 /* ---------- Toolbar ---------- */
 .toolbar {
   position: absolute;

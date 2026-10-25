@@ -95,3 +95,13 @@ export function stylesFor(ops: EditOp[], selector: string, scope?: Scope): Recor
   const op = ops.find((o) => o.kind === 'style' && o.selector === selector && sameScope(o.scope, scope)) as OpOf<'style'> | undefined;
   return op?.props ?? {};
 }
+
+/** Reorder an element among its siblings. Moving it again replaces the earlier move. */
+export function setMove(ops: EditOp[], selector: string, index: number, fingerprint?: Fingerprint): EditOp[] {
+  const idx = ops.findIndex((op) => op.kind === 'move' && op.selector === selector);
+  const op: OpOf<'move'> = { id: idx === -1 ? opId() : ops[idx].id, by: 'user', at: Date.now(), kind: 'move', selector, index, fingerprint };
+  if (idx === -1) return [...ops, op];
+  const next = [...ops];
+  next[idx] = op;
+  return next;
+}

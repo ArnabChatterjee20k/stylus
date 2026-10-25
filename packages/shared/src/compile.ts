@@ -86,6 +86,8 @@ export function describeOp(op: EditOp): string {
       return `Hidden ${op.selector}`;
     case 'text':
       return `Text ${op.selector} → “${op.text.replace(/<[^>]+>/g, '').slice(0, 40)}”`;
+    case 'move':
+      return `Moved ${op.selector} → position ${op.index + 1}`;
     case 'rawCss':
       return `Custom CSS (${op.css.split('\n').length} lines)`;
     case 'preset':

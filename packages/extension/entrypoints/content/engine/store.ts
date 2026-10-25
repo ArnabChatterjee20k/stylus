@@ -37,6 +37,11 @@ export type RecordingState = {
 };
 export const recording = signal<RecordingState | null>(null);
 
+/** A screenshot is being taken: the UI hides so it doesn't end up in the picture. */
+export const capturing = signal(false);
+/** Short message shown by the canvas (e.g. a failed screenshot). */
+export const notice = signal<{ text: string; error?: boolean } | null>(null);
+
 /** Alt is held: show distances between the selection and the hovered element. */
 export const measuring = signal(false);
 

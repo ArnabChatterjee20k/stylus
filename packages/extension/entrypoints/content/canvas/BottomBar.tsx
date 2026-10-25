@@ -2,6 +2,7 @@ import { ops, scope, select, selection } from '../engine/store';
 import { isPickable } from '../lib/dom';
 import { labelFor } from '../lib/selector';
 import { hideSelection, isolateSelection, selectSimilar, startTextEdit } from './actions';
+import { takeScreenshot } from './capture';
 import { startRecording } from './recorder';
 
 const BREAKPOINTS: [string, string][] = [
@@ -39,6 +40,7 @@ export function BottomBar() {
             <button title="Select all similar elements (S)" onClick={selectSimilar}>Similar</button>
             <button title="Hide everything except this" onClick={isolateSelection}>Isolate</button>
             <button title="Edit text (double-click)" onClick={() => startTextEdit(el)}>Edit text</button>
+            <button title="Screenshot this element" onClick={() => takeScreenshot(el)}>Screenshot</button>
             <button title="Record this element as a video" onClick={() => startRecording('element')}>Record</button>
             <button title="Hide (Delete)" class="danger" onClick={hideSelection}>Hide</button>
           </div>

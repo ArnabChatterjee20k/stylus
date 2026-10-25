@@ -29,6 +29,7 @@ Use it to strip distractions from a page, make a site easier on the eyes, or try
 - Browse the page's elements as a tree in the Layers panel, search it by name or CSS selector, and show or hide items.
 - Review every edit in the Changes panel. You can switch each one off, delete it, or export the site's edits as JSON and import them elsewhere.
 - Record a video of the selected element or the whole tab, Loom style. A 3-2-1 countdown starts it; the video shows a cursor, click ripples and the keys you press, and includes the tab's sound. Recordings open in a library page where you can watch, rename, download as MP4, or delete them.
+- Take a screenshot of the selected element or the visible tab and make it ready to share: gradient, mesh, solid or blurred backgrounds, a window or browser frame, padding, rounded corners, shadow, a glass edge, grain and a watermark, with sizes for X, Instagram, Stories and LinkedIn. Copy it or download a PNG at 1× or 2×. Screenshots keep their style, so you can come back and change it.
 - Undo and redo any edit. Edits sync to other open tabs of the same site.
 
 ## Install
@@ -61,6 +62,8 @@ Press Alt+Shift+S, or click the Stylus icon in the toolbar, to turn edit mode on
 | Hold Alt and point | Measure the distance to another element |
 | Cmd+Z, Cmd+Shift+Z | Undo, redo |
 | L, D | Show or hide the Layers and Design panels |
+
+To take a screenshot, click the camera in the toolbar and choose the selected element or the visible tab, use Screenshot in the bottom bar, or right-click any element and choose Stylus, then Screenshot this element. The editor opens in a new tab.
 
 To record, click the record button in the toolbar and choose the selected element or the whole tab, or use Record in the bottom bar. While recording an element, the controls sit next to it; for the whole tab they stay out of the video, so stop with Alt+Shift+S or the Stylus icon. Esc cancels during the countdown.
 
@@ -103,6 +106,8 @@ packages/extension   the WXT extension
   entrypoints/content/panels       Layers, Design, Theme, and Changes panels
   entrypoints/offscreen            records the captured tab, cropped to the target
   entrypoints/recordings           the recordings library page
+  entrypoints/capture              the screenshot editor
+  lib/shot-render.ts               draws a styled screenshot (used for both preview and export)
   e2e                              Playwright tests and fixture pages
 ```
 

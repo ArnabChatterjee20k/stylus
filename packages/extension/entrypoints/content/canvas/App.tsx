@@ -1,6 +1,6 @@
 import { useEffect } from 'preact/hooks';
 import { hasPreset } from '@stylus/shared';
-import { ops, panels, recording, scope, selection, tool, uiHost } from '../engine/store';
+import { capturing, notice, ops, panels, recording, scope, selection, tool, uiHost } from '../engine/store';
 import { Changes } from '../panels/Changes';
 import { Design } from '../panels/Design';
 import { Layers } from '../panels/Layers';
@@ -56,6 +56,9 @@ export function App({ onExit }: { onExit: () => void }) {
     return () => els.forEach((el) => el.classList.remove(cls));
   }, [state, els]);
 
+  // Taking a screenshot: show nothing for that moment.
+  if (capturing.value) return <div class="root" />;
+
   // While recording, only the recording layer shows: the editing UI would end up in the video.
   if (recording.value) {
     return (
@@ -77,6 +80,11 @@ export function App({ onExit }: { onExit: () => void }) {
       {panels.value.theme && <Theme />}
       {panels.value.changes && <Changes />}
       <BottomBar />
+      {notice.value && (
+        <div class={`rec-toast ${notice.value.error ? 'error' : ''}`} role="status">
+          {notice.value.text}
+        </div>
+      )}
     </div>
   );
 }

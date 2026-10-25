@@ -7,6 +7,7 @@ import { hideElement, startTextEdit } from './canvas/actions';
 import { startPicker, stopPicker } from './canvas/picker';
 import { editMode, loadRule, ops, recording, rule, select, uiHost } from './engine/store';
 import { stopRecording } from './canvas/recorder';
+import { takeScreenshot } from './canvas/capture';
 import { startEngine } from './engine/style-engine';
 import './canvas/styles.css';
 
@@ -77,6 +78,7 @@ export default defineContentScript({
       const el = contextTarget;
       if (!el?.isConnected) return;
       if (action === 'hide') return hideElement(el);
+      if (action === 'shot') return takeScreenshot(el);
       await enter();
       if (action === 'text') startTextEdit(el);
       else select([el]);

@@ -1,5 +1,7 @@
 import { browser } from 'wxt/browser';
 import { defineBackground } from '#imports';
+import { saveCapture } from '../lib/captures-db';
+import { CAPTURE_PAGE, type ShotRequest, type ShotResult } from '../lib/capture-protocol';
 import { RECORDINGS_PAGE, type OffscreenControl, type RecControlRequest, type RecResult, type RecStartRequest } from '../lib/recorder-protocol';
 
 export default defineBackground(() => {
@@ -21,6 +23,7 @@ export default defineBackground(() => {
     { id: 'stylus-hide', title: 'Hide this element', action: 'hide' },
     { id: 'stylus-text', title: 'Edit this text', action: 'text' },
     { id: 'stylus-style', title: 'Style this element…', action: 'style' },
+    { id: 'stylus-shot', title: 'Screenshot this element', action: 'shot' },
   ] as const;
 
   browser.runtime.onInstalled.addListener(async () => {
@@ -110,6 +113,38 @@ export default defineBackground(() => {
     }
     const work = m.type === 'stylus:rec:start' ? startRecording(m, sender.tab!) : control(m);
     work.then(sendResponse, (e: unknown) => sendResponse({ ok: false, error: e instanceof Error ? e.message : String(e) }));
+    return true;
+  });
+
+  // Screenshots: capture the visible tab, crop to the element, store the PNG and open the editor.
+  async function takeShot(req: ShotRequest, tab: chrome.tabs.Tab): Promise<ShotResult> {
+    const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
+    const full = await createImageBitmap(await (await fetch(dataUrl)).blob());
+    const density = full.width / req.viewportWidth;
+    const r = req.rect ?? { x: 0, y: 0, width: req.viewportWidth, height: full.height / density };
+    // Clip to what was on screen.
+    const sx = Math.max(0, Math.round(r.x * density));
+    const sy = Math.max(0, Math.round(r.y * density));
+    const sw = Math.min(full.width - sx, Math.round(r.width * density));
+    const sh = Math.min(full.height - sy, Math.round(r.height * density));
+    if (sw < 1 || sh < 1) return { ok: false, error: 'The element is not visible on screen.' };
+    const canvas = new OffscreenCanvas(sw, sh);
+    canvas.getContext('2d')!.drawImage(full, sx, sy, sw, sh, 0, 0, sw, sh);
+    const image = await canvas.convertToBlob({ type: 'image/png' });
+    const id = `shot_${Date.now().toString(36)}`;
+    await saveCapture({ id, title: req.title, url: tab.url ?? '', createdAt: Date.now(), image, width: sw, height: sh, density });
+    await browser.tabs.create({ url: browser.runtime.getURL(`${CAPTURE_PAGE}#${id}` as '/capture.html'), index: (tab.index ?? 0) + 1 });
+    return { ok: true, id };
+  }
+
+  browser.runtime.onMessage.addListener((msg: unknown, sender, sendResponse) => {
+    const m = msg as ShotRequest | { type: 'stylus:shot:library' };
+    if (m?.type === 'stylus:shot:library') {
+      void browser.tabs.create({ url: browser.runtime.getURL(CAPTURE_PAGE as '/capture.html') });
+      return;
+    }
+    if (m?.type !== 'stylus:shot' || !sender.tab) return;
+    takeShot(m, sender.tab).then(sendResponse, (e: unknown) => sendResponse({ ok: false, error: e instanceof Error ? e.message : String(e) }));
     return true;
   });
 });

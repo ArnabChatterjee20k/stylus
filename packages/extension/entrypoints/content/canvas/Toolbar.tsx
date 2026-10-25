@@ -3,6 +3,7 @@ import { useState } from 'preact/hooks';
 import { selection } from '../engine/store';
 import { labelFor } from '../lib/selector';
 import { Icon, type IconName } from './icons';
+import { openCaptures, takeScreenshot } from './capture';
 import { openLibrary, startRecording } from './recorder';
 
 const TOOLS: { id: Tool; icon: IconName; label: string; key: string }[] = [
@@ -40,6 +41,7 @@ export function Toolbar({ onExit }: { onExit: () => void }) {
         ))}
       </div>
       <div class="tb-sep" />
+      <ShotMenu />
       <RecordMenu />
       <div class="tb-sep" />
       <div class="tb-group">
@@ -90,6 +92,38 @@ function RecordMenu() {
           <hr />
           <button role="menuitem" onClick={pick(openLibrary)}>
             Open recordings
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ShotMenu() {
+  const [open, setOpen] = useState(false);
+  const target = selection.value?.els.find((e) => e.isConnected);
+  const pick = (fn: () => unknown) => () => {
+    setOpen(false);
+    fn();
+  };
+  return (
+    <div class="tb-rec">
+      <button class={`tb-btn ${open ? 'on' : ''}`} title="Screenshot" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)}>
+        <Icon name="camera" />
+      </button>
+      {open && (
+        <div class="rec-menu" role="menu">
+          <button role="menuitem" disabled={!target} onClick={pick(() => takeScreenshot(target ?? null))}>
+            Screenshot selected element
+            <small>{target ? labelFor(target) : 'Select an element first'}</small>
+          </button>
+          <button role="menuitem" onClick={pick(() => takeScreenshot(null))}>
+            Screenshot visible tab
+            <small>Everything on screen in this tab</small>
+          </button>
+          <hr />
+          <button role="menuitem" onClick={pick(openCaptures)}>
+            Open screenshots
           </button>
         </div>
       )}

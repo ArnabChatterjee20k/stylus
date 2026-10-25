@@ -25,7 +25,10 @@ function useDraft(value: string) {
   return { draft, setDraft, focused };
 }
 
-/** Number field with a draggable label (Figma "scrubby" input). Arrow keys step; Shift = ×10. */
+/**
+ * Number field with a draggable label (Figma "scrubby" input). Arrow keys step; Shift = ×10.
+ * The wrapper is a <div>, not a <label>, so dragging doesn't focus the input and ⌘Z still undoes the edit.
+ */
 export function Scrub(props: {
   label: ComponentChildren;
   value: string;
@@ -63,7 +66,7 @@ export function Scrub(props: {
   };
 
   return (
-    <label class={`field scrub ${props.wide ? 'wide' : ''}`} title={title}>
+    <div class={`field scrub ${props.wide ? 'wide' : ''}`} title={title}>
       <span class="scrub-label" onPointerDown={onPointerDown}>
         {label}
       </span>
@@ -86,7 +89,7 @@ export function Scrub(props: {
           }
         }}
       />
-    </label>
+    </div>
   );
 }
 

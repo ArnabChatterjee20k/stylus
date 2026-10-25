@@ -283,6 +283,43 @@ textarea.code:focus { border-color: var(--accent); }
 .theme-block { display: flex; flex-direction: column; gap: 8px; padding: 10px; border-bottom: 1px solid var(--line); }
 .theme-block:last-child { border-bottom: 0; }
 
+/* ---------- Recording ---------- */
+.rec-layer, .rec-layer > * { position: absolute; left: 0; top: 0; }
+.rec-layer { inset: 0; }
+.rec-countdown { inset: 0; position: fixed; display: grid; place-content: center; justify-items: center; gap: 14px; background: rgba(10, 10, 12, 0.45); color: #fff; pointer-events: auto; }
+.rec-count { width: 120px; height: 120px; display: grid; place-items: center; border-radius: 50%; background: rgba(229, 56, 59, 0.92); font: 700 56px/1 var(--font); box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4); }
+.rec-hint { text-align: center; font: 500 13px/1.6 var(--font); text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6); }
+.rec-target { outline: 3px solid #e5383b; outline-offset: 2px; border-radius: 4px; box-shadow: 0 0 0 9999px rgba(10, 10, 12, 0.25); }
+.rec-cursor { margin: -3px 0 0 -5px; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.35)); will-change: transform; }
+.rec-ripple { width: 0; height: 0; }
+.rec-ripple::after { content: ''; position: absolute; left: -22px; top: -22px; width: 44px; height: 44px; border-radius: 50%; background: rgba(255, 77, 148, 0.35); border: 2px solid rgba(255, 77, 148, 0.9); animation: rec-ripple 0.6s ease-out forwards; }
+@keyframes rec-ripple { from { transform: scale(0.2); opacity: 1; } to { transform: scale(1.4); opacity: 0; } }
+.rec-heartbeat { position: fixed; left: auto; top: auto; right: 0; bottom: 0; width: 2px; height: 2px; background: #000; animation: rec-heartbeat 0.5s steps(2) infinite; }
+@keyframes rec-heartbeat { from { opacity: 0.01; } to { opacity: 0.02; } }
+.rec-keys { white-space: nowrap; }
+.rec-keys span { display: inline-block; padding: 6px 12px; border-radius: 8px; background: rgba(20, 20, 22, 0.88); color: #fff; font: 600 15px/1.2 var(--font); letter-spacing: 0.02em; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3); animation: rec-key-in 0.12s ease-out; }
+@keyframes rec-key-in { from { transform: translateY(4px); opacity: 0; } }
+.rec-pill { display: none; align-items: center; gap: 6px; height: 38px; padding: 0 6px 0 12px; border-radius: 19px; background: var(--bg); border: 1px solid var(--line); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35); pointer-events: auto; }
+.rec-dot { width: 10px; height: 10px; border-radius: 50%; background: #e5383b; animation: rec-blink 1.2s ease-in-out infinite; }
+.rec-dot.paused { background: #f2a93b; animation: none; }
+@keyframes rec-blink { 50% { opacity: 0.35; } }
+.rec-time { min-width: 38px; font: 600 12px var(--mono); color: var(--text); }
+.rec-btn { height: 28px; padding: 0 10px; border-radius: 14px; color: var(--text-2); }
+.rec-btn:hover { background: var(--bg-2); color: var(--text); }
+.rec-btn.stop { background: #e5383b; color: #fff; }
+.rec-btn.stop:hover { background: #c92a2d; color: #fff; }
+.rec-toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); padding: 10px 16px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line); color: var(--text); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35); }
+.rec-toast.error { border-color: #e5383b; max-width: min(520px, calc(100vw - 32px)); }
+
+.rec-menu { position: absolute; top: 40px; right: 0; min-width: 230px; padding: 4px; border-radius: 8px; background: var(--bg); border: 1px solid var(--line); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35); display: flex; flex-direction: column; }
+.rec-menu button { display: flex; flex-direction: column; align-items: flex-start; padding: 7px 10px; border-radius: 6px; text-align: left; color: var(--text); }
+.rec-menu button:hover:not(:disabled) { background: var(--accent); color: #fff; }
+.rec-menu button small { color: var(--text-3); }
+.rec-menu button:hover:not(:disabled) small { color: rgba(255, 255, 255, 0.85); }
+.rec-menu hr { border: 0; border-top: 1px solid var(--line); margin: 4px 0; }
+.tb-rec { position: relative; }
+.tb-btn.rec { color: #ff6b6e; }
+
 /* ---------- Bottom bar ---------- */
 .bottombar {
   position: absolute;

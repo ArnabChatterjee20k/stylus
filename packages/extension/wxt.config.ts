@@ -6,7 +6,7 @@ export default defineConfig({
   manifest: {
     name: 'Stylus — live page canvas',
     description: 'Turn any webpage into a design canvas: hide, edit, restyle and theme pages live.',
-    permissions: ['storage', 'tabs', 'contextMenus'],
+    permissions: ['storage', 'tabs', 'contextMenus', 'tabCapture', 'offscreen', 'unlimitedStorage'],
     action: { default_title: 'Toggle Stylus edit mode (Alt+Shift+S)' },
     commands: {
       'toggle-edit': {

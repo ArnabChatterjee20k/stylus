@@ -5,7 +5,8 @@ import { createShadowRootUi, defineContentScript, type ShadowRootContentScriptUi
 import { App } from './canvas/App';
 import { hideElement, startTextEdit } from './canvas/actions';
 import { startPicker, stopPicker } from './canvas/picker';
-import { editMode, loadRule, ops, rule, select, uiHost } from './engine/store';
+import { editMode, loadRule, ops, recording, rule, select, uiHost } from './engine/store';
+import { stopRecording } from './canvas/recorder';
 import { startEngine } from './engine/style-engine';
 import './canvas/styles.css';
 
@@ -84,7 +85,9 @@ export default defineContentScript({
     browser.runtime.onMessage.addListener((msg: unknown) => {
       const m = msg as { type?: string; action?: string } | null;
       if (m?.type === 'stylus:toggle') {
-        if (editMode.value) exit();
+        // While recording, the toolbar icon and Alt+Shift+S stop the recording.
+        if (recording.value) void stopRecording();
+        else if (editMode.value) exit();
         else void enter();
       } else if (m?.type === 'stylus:context' && m.action) {
         void onContextAction(m.action);
@@ -94,7 +97,10 @@ export default defineContentScript({
     // Keep the toolbar badge in sync: "ON" while editing, otherwise the number of edits on this site.
     effect(() => {
       const count = rule.value.enabled ? ops.value.filter((op) => !op.disabled).length : 0;
-      browser.runtime.sendMessage({ type: 'stylus:status', editing: editMode.value, count }).catch(() => {});
+      const rec = recording.value;
+      browser.runtime
+        .sendMessage({ type: 'stylus:status', editing: editMode.value, recording: !!rec && rec.phase !== 'countdown' && !rec.error, count })
+        .catch(() => {});
     });
 
     ctx.onInvalidated(exit);

@@ -2,8 +2,10 @@ import { expect, test } from '../fixtures';
 
 test('registers the Stylus right-click menu items', async ({ sw }) => {
   for (const id of ['stylus', 'stylus-hide', 'stylus-text', 'stylus-style']) {
-    // update() rejects for ids that don't exist.
-    await sw.evaluate((menuId) => chrome.contextMenus.update(menuId, {}), id);
+    // update() rejects for ids that don't exist. Menus are created in onInstalled, which may still be running.
+    await expect
+      .poll(() => sw.evaluate((menuId) => chrome.contextMenus.update(menuId, {}).then(() => true, () => false), id))
+      .toBe(true);
   }
 });
 

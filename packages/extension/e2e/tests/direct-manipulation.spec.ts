@@ -113,6 +113,30 @@ test.describe('nudge', () => {
   });
 });
 
+test.describe('inline elements', () => {
+  test('arrow keys move an inline element', async ({ stylus, page }) => {
+    await stylus.open();
+    await stylus.edit();
+    await stylus.pick('#link');
+    const before = (await page.locator('#link').boundingBox())!;
+    await page.keyboard.press('Shift+ArrowRight');
+    await page.keyboard.press('ArrowDown');
+    const after = (await page.locator('#link').boundingBox())!;
+    expect(Math.round(after.x - before.x)).toBe(10);
+    expect(Math.round(after.y - before.y)).toBe(1);
+  });
+
+  test('resizing an inline element makes it inline-block and grows it from its real size', async ({ stylus, page }) => {
+    await stylus.open();
+    await stylus.edit();
+    await stylus.pick('#link');
+    const w0 = (await page.locator('#link').boundingBox())!.width;
+    await dragHandle(stylus, 'e', 30, 0);
+    expect(await stylus.style('#link', 'display')).toBe('inline-block');
+    expect(Math.round((await page.locator('#link').boundingBox())!.width)).toBe(Math.round(w0 + 30));
+  });
+});
+
 test.describe('reorder', () => {
   test('dragging the selection past a sibling moves it there, and persists', async ({ stylus, page }) => {
     await stylus.open();

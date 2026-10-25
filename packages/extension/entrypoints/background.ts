@@ -1,5 +1,6 @@
 import { browser } from 'wxt/browser';
 import { defineBackground } from '#imports';
+import { requestEdits, type AiRequest } from '../lib/claude';
 
 export default defineBackground(() => {
   const toggle = async (tabId?: number) => {
@@ -19,6 +20,14 @@ export default defineBackground(() => {
     if (command !== 'toggle-edit') return;
     const id = tab?.id ?? (await browser.tabs.query({ active: true, currentWindow: true }))[0]?.id;
     await toggle(id);
+  });
+
+  // AI edits: the content script sends the prompt and page context; the call runs here, away from the page.
+  browser.runtime.onMessage.addListener((msg: unknown, _sender, sendResponse) => {
+    const m = msg as { type?: string; request?: AiRequest };
+    if (m?.type !== 'stylus:ai' || !m.request) return;
+    requestEdits(m.request).then(sendResponse);
+    return true; // keep the channel open for the async response
   });
 
   browser.runtime.onMessage.addListener((msg: unknown, sender) => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { compileCss, History, parseRule, setStyle, setText, toggleHide, togglePreset, type EditOp } from '../src';
+import { aiEditsToOps, compileCss, History, parseRule, setStyle, setText, toggleHide, togglePreset, type EditOp } from '../src';
 
 describe('setStyle', () => {
   it('merges props for the same selector into one op', () => {
@@ -78,5 +78,46 @@ describe('parseRule', () => {
     });
     expect(rule.ops).toHaveLength(1);
     expect(rule.ops[0]).toMatchObject({ kind: 'hide', mode: 'display', by: 'user' });
+  });
+});
+
+describe('aiEditsToOps', () => {
+  const edit = (e: Partial<import('../src').AiEdit>): import('../src').AiEdit => ({
+    kind: 'style', selector: '', declarations: [], text: '', css: '', preset: '', ...e,
+  });
+
+  it('converts each edit kind into an AI-authored op', () => {
+    const ops = aiEditsToOps({
+      summary: 'x',
+      edits: [
+        edit({ selector: '.card', declarations: [{ property: 'Background-Color', value: ' #111 ' }] }),
+        edit({ kind: 'hide', selector: '#ad' }),
+        edit({ kind: 'text', selector: 'h1', text: 'Hi' }),
+        edit({ kind: 'rawCss', css: 'p { color: red }' }),
+        edit({ kind: 'preset', preset: 'sepia' }),
+      ],
+    });
+    expect(ops.map((o) => o.kind)).toEqual(['style', 'hide', 'text', 'rawCss', 'preset']);
+    expect(ops.every((o) => o.by === 'ai')).toBe(true);
+    expect(ops[0]).toMatchObject({ selector: '.card', props: { 'background-color': '#111' } });
+  });
+
+  it('drops empty, unknown and invalid edits', () => {
+    const ops = aiEditsToOps(
+      {
+        summary: 'x',
+        edits: [
+          edit({ selector: '.a', declarations: [] }),
+          edit({ kind: 'hide', selector: '' }),
+          edit({ kind: 'preset', preset: 'neon' }),
+          edit({ kind: 'rawCss', css: '  ' }),
+          edit({ kind: 'hide', selector: '!!bad' }),
+          edit({ kind: 'hide', selector: '#ok' }),
+        ],
+      },
+      (s) => !s.startsWith('!'),
+    );
+    expect(ops).toHaveLength(1);
+    expect(ops[0]).toMatchObject({ kind: 'hide', selector: '#ok' });
   });
 });

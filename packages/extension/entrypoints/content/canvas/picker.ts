@@ -1,4 +1,4 @@
-import { hovered, redo, select, selection, tool, uiHost, undo, togglePanel } from '../engine/store';
+import { aiOpen, hovered, redo, select, selection, tool, uiHost, undo, togglePanel } from '../engine/store';
 import { isPickable } from '../lib/dom';
 import {
   finishTextEdit,
@@ -86,6 +86,10 @@ function onKey(e: KeyboardEvent) {
     if (mod && e.key.toLowerCase() === 'z') {
       if (e.shiftKey) redo();
       else undo();
+      return true;
+    }
+    if (mod && e.key.toLowerCase() === 'k') {
+      aiOpen.value = !aiOpen.value;
       return true;
     }
     if (mod && e.key.toLowerCase() === 'y') {

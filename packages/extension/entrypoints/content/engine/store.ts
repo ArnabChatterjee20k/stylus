@@ -1,6 +1,6 @@
 import { batch, computed, signal } from '@preact/signals';
 import { browser } from 'wxt/browser';
-import { History, emptyRule, parseRule, type EditOp, type Scope, type SiteRule } from '@stylus/shared';
+import { History, emptyRule, parseRule, type AiReply, type EditOp, type Scope, type SiteRule } from '@stylus/shared';
 import { combinedSelector } from '../lib/selector';
 
 const origin = location.origin;
@@ -24,6 +24,14 @@ export const canUndo = signal(false);
 export const canRedo = signal(false);
 /** The shadow host of our UI, so pickers can ignore it. */
 export const uiHost = signal<HTMLElement | null>(null);
+
+/** AI-proposed edits being previewed: rendered on the page but not saved until accepted. */
+export type Draft = { prompt: string; summary: string; ops: EditOp[]; history: { prompt: string; reply: AiReply }[] };
+export const draft = signal<Draft | null>(null);
+export const aiOpen = signal(false);
+
+/** What the page should show right now: saved edits plus any previewed draft. */
+export const liveOps = computed(() => (rule.value.enabled ? [...rule.value.ops, ...(draft.value?.ops ?? [])] : []));
 
 const history = new History<EditOp[]>([]);
 /** Our own writes still waiting for their storage.onChanged echo; those echoes must not be mistaken for external edits. */

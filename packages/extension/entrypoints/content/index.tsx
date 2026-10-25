@@ -4,7 +4,7 @@ import { browser } from 'wxt/browser';
 import { createShadowRootUi, defineContentScript, type ShadowRootContentScriptUi } from '#imports';
 import { App } from './canvas/App';
 import { startPicker, stopPicker } from './canvas/picker';
-import { editMode, loadRule, ops, rule, select, uiHost } from './engine/store';
+import { aiOpen, draft, editMode, loadRule, ops, rule, select, uiHost } from './engine/store';
 import { startEngine } from './engine/style-engine';
 import './canvas/styles.css';
 
@@ -33,6 +33,9 @@ export default defineContentScript({
     const exit = () => {
       if (!editMode.value) return;
       editMode.value = false;
+      // An unaccepted AI preview is discarded when leaving edit mode.
+      draft.value = null;
+      aiOpen.value = false;
       stopPicker();
       select(null);
       ui?.remove();

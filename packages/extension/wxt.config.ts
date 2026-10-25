@@ -7,6 +7,7 @@ export default defineConfig({
     name: 'Stylus — live page canvas',
     description: 'Turn any webpage into a design canvas: hide, edit, restyle and theme pages live.',
     permissions: ['storage', 'tabs'],
+    host_permissions: ['https://api.anthropic.com/*'],
     action: { default_title: 'Toggle Stylus edit mode (Alt+Shift+S)' },
     commands: {
       'toggle-edit': {

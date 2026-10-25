@@ -1,10 +1,11 @@
 import { useEffect } from 'preact/hooks';
 import { hasPreset } from '@stylus/shared';
-import { ops, panels, scope, selection, tool, uiHost } from '../engine/store';
+import { aiOpen, ops, panels, scope, selection, tool, uiHost } from '../engine/store';
 import { Changes } from '../panels/Changes';
 import { Design } from '../panels/Design';
 import { Layers } from '../panels/Layers';
 import { Theme } from '../panels/Theme';
+import { AiBar } from './AiBar';
 import { BottomBar } from './BottomBar';
 import { Overlay } from './Overlay';
 import { Toolbar } from './Toolbar';
@@ -59,6 +60,7 @@ export function App({ onExit }: { onExit: () => void }) {
       {panels.value.design && <Design />}
       {panels.value.theme && <Theme />}
       {panels.value.changes && <Changes />}
+      {aiOpen.value && <AiBar />}
       <BottomBar />
     </div>
   );
